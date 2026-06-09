@@ -1,21 +1,25 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BarberManagementSystem.Models;
-
-public class Barber
+namespace BarberManagementSystem.Models
 {
-    public int Id { get; set; }
+    public class Barber
+    {
+        public int Id { get; set; }
 
-    [Required]
-    public int UserId { get; set; }
+        // FK → User
+        [Required]
+        public int UserId { get; set; }
 
-    [Required]
-    [MaxLength(100)]
-    public string Specialization { get; set; } = string.Empty;
+        // Required specialization field
+        [Required]
+        [MaxLength(100)]
+        public string Specialization { get; set; } = string.Empty;
 
-    // Navigation
-    public User User { get; set; }
-    public ICollection<WorkingHours>? WorkingHours { get; set; }
-    public ICollection<Break>? Breaks { get; set; }
-    public ICollection<Booking>? Bookings { get; set; }
+        // Navigation properties
+        public User User { get; set; } = null!;  // non-nullable navigation
+
+        public ICollection<WorkingHours> WorkingHours { get; set; } = new List<WorkingHours>();
+        public ICollection<Break> Breaks { get; set; } = new List<Break>();
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    }
 }
