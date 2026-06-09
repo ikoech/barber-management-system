@@ -1,16 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 namespace BarberManagementSystem.Models;
 
 public class WorkingHours
 {
-
     public int Id { get; set; }
 
     [Required]
     public int BarberId { get; set; }
 
     [Required]
-    public DayOfWeek Day { get; set; }
+    [MaxLength(20)]
+    public string DayOfWeek { get; set; } = string.Empty;
 
     [Required]
     public TimeSpan StartTime { get; set; }
@@ -18,6 +19,5 @@ public class WorkingHours
     [Required]
     public TimeSpan EndTime { get; set; }
 
-    // Navigation
-    public Barber? Barber { get; set; }
+    public Barber Barber { get; set; } = null!;
 }
