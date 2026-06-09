@@ -1,8 +1,9 @@
-using System.Text;
 using BarberManagementSystem.Configuration;
 using BarberManagementSystem.Models;
+using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddSingleton(jwtSettings);
 
 //  Add controllers
 builder.Services.AddControllers();
+builder.Services.AddScoped<AvailabilityService>();
+builder.Services.AddScoped<BookingEngine>();
+
 
 //  Swagger
 builder.Services.AddEndpointsApiExplorer();

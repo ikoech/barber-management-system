@@ -11,7 +11,7 @@ namespace BarberManagementSystem.Models
         public DbSet<Service> Services { get; set; }
         public DbSet<WorkingHours> WorkingHours { get; set; }
         public DbSet<Break> Breaks { get; set; }
-        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<Booking> Bookings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
