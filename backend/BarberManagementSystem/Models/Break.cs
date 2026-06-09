@@ -1,5 +1,5 @@
-﻿
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+
 namespace BarberManagementSystem.Models;
 
 public class Break
@@ -10,11 +10,14 @@ public class Break
     public int BarberId { get; set; }
 
     [Required]
-    public DateTime Start { get; set; }
+    [MaxLength(20)]
+    public string DayOfWeek { get; set; } = string.Empty;
 
     [Required]
-    public DateTime End { get; set; }
+    public TimeSpan StartTime { get; set; }
 
-    // Navigation
-    public Barber? Barber { get; set; }
+    [Required]
+    public TimeSpan EndTime { get; set; }
+
+    public Barber Barber { get; set; } = null!;
 }
