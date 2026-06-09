@@ -1,5 +1,6 @@
 ﻿using BarberManagementSystem.DTOs.Barber;
 using BarberManagementSystem.Models;
+using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -97,6 +98,26 @@ public class BarbersController : ControllerBase
             UserId = barber.UserId,
             Specialization = barber.Specialization
         });
+    }
+
+    // Get Schedule: api/barbers/{id}/schedule
+    [HttpGet("{barberId}/schedule")]
+    public async Task<IActionResult> GetSchedule(
+        int barberId,
+        [FromQuery] DateTime date,
+        [FromServices] ScheduleService scheduleService)
+    {
+        return Ok(await scheduleService.GetScheduleAsync(barberId, date));
+    }
+
+    // Get Weekly Schedule: api/barbers/{id}/weekly-schedule
+    [HttpGet("{barberId}/schedule/weekly")]
+    public async Task<IActionResult> GetWeeklySchedule(
+        int barberId,
+        [FromQuery] DateTime startDate,
+        [FromServices] ScheduleService scheduleService)
+    {
+        return Ok(await scheduleService.GetWeeklyScheduleAsync(barberId, startDate));
     }
 
     // DELETE: api/barbers/{id}
