@@ -1,5 +1,5 @@
 using BarberManagementSystem.Configuration;
-using BarberManagementSystem.Models;
+using BarberManagementSystem.DTOs.Services;
 using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -17,7 +17,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<AvailabilityService>();
 builder.Services.AddScoped<BookingEngine>();
 builder.Services.AddScoped<ScheduleService>();
-
+builder.Services.AddScoped<AdminBookingService>();
 //  Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
