@@ -46,6 +46,19 @@ builder.Services
         };
     });
 
+//  Authorization - role-based
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
+    options.AddPolicy("BarberOrAdmin", policy =>
+        policy.RequireRole("Barber", "Admin"));
+
+    options.AddPolicy("CustomerOrAdmin", policy =>
+        policy.RequireRole("Customer", "Admin"));
+});
+
 //  Authorization
 builder.Services.AddAuthorization();
 

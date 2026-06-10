@@ -12,7 +12,6 @@ namespace BarberManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-
 public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -24,25 +23,28 @@ public class AuthController : ControllerBase
         _jwtSettings = jwtSettings;
     }
 
+    // POST: api/auth/register
     [HttpPost("register")]
     public IActionResult Register(RegisterDto dto)
     {
-        if(_context.Users.Any(u => u.Email == dto.Email))
-        {
+        if (_context.Users.Any(u => u.Email == dto.Email))
             return BadRequest("Email already exists.");
-        }
+
         var user = new User
         {
             FullName = dto.FullName,
             Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = "Customer" // ⭐ Default role
         };
+
         _context.Users.Add(user);
         _context.SaveChanges();
 
         return Ok("User registered successfully.");
     }
 
+    // Additional endpoints for login, token generation, etc.
     [HttpPost("login")]
     public IActionResult Login(LoginDto dto)
     {
@@ -57,14 +59,15 @@ public class AuthController : ControllerBase
         return Ok(new { token });
     }
 
+    // Helper method to generate JWT token
     private string GenerateJwtToken(User user)
     {
         var claims = new[]
         {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
-            };
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role) // ⭐ Role claim
+        };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

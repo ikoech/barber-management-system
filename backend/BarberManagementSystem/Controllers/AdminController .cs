@@ -1,17 +1,22 @@
 ﻿using BarberManagementSystem.DTOs.Services;
+using BarberManagementSystem.Models;
 using BarberManagementSystem.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BarberManagementSystem.Controllers;
 
+[Authorize(Policy = "AdminOnly")]
 [ApiController]
 [Route("api/admin")]
 public class AdminController : ControllerBase   
 {
     private readonly AdminBookingService _bookingService;
-    public AdminController(AdminBookingService bookingService)
+    private readonly AppDbContext _context;
+    public AdminController(AdminBookingService bookingService, AppDbContext context)
     {
         _bookingService = bookingService;
+        _context = context;
     }
     // GET: api/admin/bookings
     [HttpGet("bookings")]
@@ -25,5 +30,18 @@ public class AdminController : ControllerBase
                 barberId, userId, serviceId, date);
 
         return Ok(bookings);
-    }   
+    }
+
+    // PUT: api/admin/users/{userId}/role
+    [HttpPut("users/{userId}/role")]
+    public async Task<IActionResult> SetUserRole(int userId, [FromBody] string role)
+    {
+       var user = await _context.Users.FindAsync(userId);
+       if (user == null) return NotFound("User not found.");
+
+       user.Role = role;
+       await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

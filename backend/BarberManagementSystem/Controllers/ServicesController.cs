@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = "AdminOnly")]
 [ApiController]
 [Route("api/[controller]")]
 public class ServicesController : ControllerBase
@@ -38,6 +38,7 @@ public class ServicesController : ControllerBase
     }
 
     // POST: api/services
+    [Authorize(Policy = "AdminOnly")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateServiceDto dto)
     {
@@ -55,6 +56,7 @@ public class ServicesController : ControllerBase
     }
 
     // PUT: api/services/{id}
+    [Authorize(Policy = "AdminOnly")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateServiceDto dto)
     {
@@ -72,6 +74,7 @@ public class ServicesController : ControllerBase
     }
 
     // DELETE: api/services/{id}
+    [Authorize(Policy = "AdminOnly")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

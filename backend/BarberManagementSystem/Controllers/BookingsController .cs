@@ -1,6 +1,7 @@
 ﻿using BarberManagementSystem.DTOs.Booking;
 using BarberManagementSystem.Models;
 using BarberManagementSystem.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ public class BookingsController : ControllerBase
         _context = context;
     }
 
+    // POST: api/bookings - Create a new booking
+    [Authorize(Policy = "CustomerOrAdmin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateBookingDto dto)
     {
@@ -47,7 +50,9 @@ public class BookingsController : ControllerBase
         }
     }
 
+    // Additional endpoints for updating, canceling, and retrieving bookings can be added here
     [HttpGet("user/{userId}")]
+    [Authorize(Policy = "CustomerOrAdmin")]
     public async Task<IActionResult> GetByUser(int userId)
     {
         var bookings = await _context.Bookings
@@ -67,6 +72,8 @@ public class BookingsController : ControllerBase
         return Ok(booking);
     }
 
+    // Additional endpoints for updating and deleting bookings can be added here
+    [Authorize(Policy = "CustomerOrAdmin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Cancel(int id)
     {

@@ -101,6 +101,7 @@ public class BarbersController : ControllerBase
     }
 
     // Get Schedule: api/barbers/{id}/schedule
+    [Authorize(Policy = "BarberOrAdmin")]
     [HttpGet("{barberId}/schedule")]
     public async Task<IActionResult> GetSchedule(
         int barberId,
@@ -111,6 +112,7 @@ public class BarbersController : ControllerBase
     }
 
     // Get Weekly Schedule: api/barbers/{id}/weekly-schedule
+    [Authorize(Policy = "BarberOrAdmin")]
     [HttpGet("{barberId}/schedule/weekly")]
     public async Task<IActionResult> GetWeeklySchedule(
         int barberId,
