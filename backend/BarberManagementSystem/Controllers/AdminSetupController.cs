@@ -1,4 +1,5 @@
 ﻿using BarberManagementSystem.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,4 +37,5 @@ public class AdminSetupController : ControllerBase
 
         return Ok("Admin user created successfully.");
     }
+
 }

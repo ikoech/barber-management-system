@@ -9,16 +9,20 @@ namespace BarberManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize] // Any logged-in user can reach this controller
 public class BarbersController : ControllerBase
 {
     private readonly AppDbContext _context;
-    public BarbersController(AppDbContext context)
+    private readonly ScheduleService _scheduleService;
+
+    public BarbersController(AppDbContext context, ScheduleService scheduleService)
     {
         _context = context;
+        _scheduleService = scheduleService;
     }
 
-    // GET: api/barbers
+    // ADMIN: GET ALL BARBERS
+    [Authorize(Roles = "Admin")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -34,7 +38,8 @@ public class BarbersController : ControllerBase
         return Ok(barbers);
     }
 
-    // GET: api/barbers/{id}
+    // ADMIN: GET BARBER BY ID
+    [Authorize(Roles = "Admin")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -54,11 +59,11 @@ public class BarbersController : ControllerBase
         return Ok(barber);
     }
 
-    // POST: api/barbers
+    // ADMIN: CREATE BARBER
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateBarberDto dto)
     {
-        // Validate that the user exists and is not already a barber
         var user = await _context.Users.FindAsync(dto.UserId);
         if (user == null)
             return BadRequest("User not found.");
@@ -80,7 +85,8 @@ public class BarbersController : ControllerBase
         });
     }
 
-    // PUT: api/barbers/{id}
+    // ADMIN: UPDATE BARBER
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateBarberDto dto)
     {
@@ -89,7 +95,6 @@ public class BarbersController : ControllerBase
             return NotFound("Barber not found.");
 
         barber.Specialization = dto.Specialization;
-
         await _context.SaveChangesAsync();
 
         return Ok(new BarberResponseDto
@@ -100,29 +105,31 @@ public class BarbersController : ControllerBase
         });
     }
 
-    // Get Schedule: api/barbers/{id}/schedule
+    // BARBER + ADMIN: DAILY SCHEDULE
     [Authorize(Policy = "BarberOrAdmin")]
     [HttpGet("{barberId}/schedule")]
-    public async Task<IActionResult> GetSchedule(
-        int barberId,
-        [FromQuery] DateTime date,
-        [FromServices] ScheduleService scheduleService)
+    public async Task<IActionResult> GetSchedule(int barberId, [FromQuery] DateTime date)
     {
-        return Ok(await scheduleService.GetScheduleAsync(barberId, date));
+        var result = await _scheduleService.GetScheduleAsync(barberId, date);
+        return Ok(result);
     }
 
-    // Get Weekly Schedule: api/barbers/{id}/weekly-schedule
+    // BARBER + ADMIN: WEEKLY SCHEDULE
     [Authorize(Policy = "BarberOrAdmin")]
-    [HttpGet("{barberId}/schedule/weekly")]
-    public async Task<IActionResult> GetWeeklySchedule(
-        int barberId,
-        [FromQuery] DateTime startDate,
-        [FromServices] ScheduleService scheduleService)
+    [HttpGet("{barberId}/schedule/monthly")]
+    public async Task<IActionResult> GetMonthlySchedule(int barberId, int year, int month)
     {
-        return Ok(await scheduleService.GetWeeklyScheduleAsync(barberId, startDate));
+        var result = await _scheduleService.GetMonthlyScheduleAsync(barberId, year, month);
+
+        if (result == null)
+            return Ok(new { message = "No schedule found", barberId, year, month });
+        Console.WriteLine($"Monthly schedule hit: barberId={barberId}, year={year}, month={month}");
+
+        return Ok(result);
     }
 
-    // DELETE: api/barbers/{id}
+    // ADMIN: DELETE BARBER
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

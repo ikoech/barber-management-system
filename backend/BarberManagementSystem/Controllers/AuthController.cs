@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using BarberManagementSystem.Models;
+﻿using BarberManagementSystem.Configuration;
 using BarberManagementSystem.DTOs.Auth;
+using BarberManagementSystem.Models;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using BarberManagementSystem.Configuration;
 
 namespace BarberManagementSystem.Controllers;
 
@@ -82,4 +84,44 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    // ADMIN: GET ALL USERS
+    [AllowAnonymous]
+    [HttpPost("create-temp-admin")]
+    public async Task<IActionResult> CreateTempAdmin([FromServices] AppDbContext context)
+    {
+        // Check if an admin already exists
+        if (await context.Users.AnyAsync(u => u.Role == "Admin"))
+            return BadRequest("Admin already exists.");
+
+        var admin = new User
+        {
+            FullName = "System Admin",
+            Email = "admin@system.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+            Role = "Admin"
+        };
+
+        context.Users.Add(admin);
+        await context.SaveChangesAsync();
+
+        return Ok("Temporary Admin created. Email: admin@system.com, Password: Admin123!");
+    }
+
+    // ADMIN: GET ALL USERS
+    [AllowAnonymous]
+    [HttpPost("reset-admin-password")]
+    public async Task<IActionResult> ResetAdminPassword(
+    [FromServices] AppDbContext context)
+    {
+        var admin = await context.Users.FirstOrDefaultAsync(u => u.Role == "Admin");
+        if (admin == null)
+            return NotFound("No admin found.");
+
+        admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!");
+        await context.SaveChangesAsync();
+
+        return Ok("Admin password reset to Admin123!");
+    }
+
+
 }

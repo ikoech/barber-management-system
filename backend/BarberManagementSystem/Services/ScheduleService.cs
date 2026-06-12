@@ -13,15 +13,33 @@ public class ScheduleService
         _context = context;
     }
 
+    // Get the schedule for a specific barber on a specific date
     public async Task<BarberScheduleDto> GetScheduleAsync(int barberId, DateTime date)
     {
+        // Ensure barber exists
+        var barberExists = await _context.Barbers.AnyAsync(b => b.Id == barberId);
+        if (!barberExists)
+        {
+            return new BarberScheduleDto
+            {
+                Date = date,
+                DayOfWeek = date.DayOfWeek.ToString(),
+                AvailableSlots = new List<string>(),
+                Breaks = new List<BreakDto>(),
+                Bookings = new List<BookingSlotDto>()
+            };
+        }
+
         date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
         var day = date.DayOfWeek.ToString();
 
         var schedule = new BarberScheduleDto
         {
             Date = date,
-            DayOfWeek = day
+            DayOfWeek = day,
+            Breaks = new List<BreakDto>(),
+            Bookings = new List<BookingSlotDto>(),
+            AvailableSlots = new List<string>()
         };
 
         // Working hours
@@ -90,18 +108,19 @@ public class ScheduleService
         return schedule;
     }
 
+    // Weekly schedule
     public async Task<WeeklyBarberScheduleDto> GetWeeklyScheduleAsync(int barberId, DateTime startDate)
     {
         startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
 
-        // Ensure week starts on Monday
         while (startDate.DayOfWeek != DayOfWeek.Monday)
             startDate = startDate.AddDays(-1);
 
         var week = new WeeklyBarberScheduleDto
         {
             WeekStart = startDate,
-            WeekEnd = startDate.AddDays(6)
+            WeekEnd = startDate.AddDays(6),
+            Days = new List<BarberScheduleDto>()
         };
 
         for (int i = 0; i < 7; i++)
@@ -112,5 +131,21 @@ public class ScheduleService
         }
 
         return week;
+    }
+
+    // Monthly schedule
+    public async Task<List<BarberScheduleDto>> GetMonthlyScheduleAsync(int barberId, int year, int month)
+    {
+        var schedules = new List<BarberScheduleDto>();
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(year, month, day);
+            var dailySchedule = await GetScheduleAsync(barberId, date);
+            schedules.Add(dailySchedule);
+        }
+
+        return schedules;
     }
 }

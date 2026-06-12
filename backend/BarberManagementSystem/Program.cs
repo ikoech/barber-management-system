@@ -40,21 +40,30 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.Key)
+            ),
+
+            // ⭐ CRITICAL: This MUST match your JWT payload claim name
+            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
         };
     });
 
 //  Authorization - role-based
 builder.Services.AddAuthorization(options =>
 {
+    // Admin only
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin"));
 
+    // Barber or Admin
     options.AddPolicy("BarberOrAdmin", policy =>
         policy.RequireRole("Barber", "Admin"));
 
+    // Customer or Admin
     options.AddPolicy("CustomerOrAdmin", policy =>
         policy.RequireRole("Customer", "Admin"));
 });
