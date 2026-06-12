@@ -15,6 +15,9 @@ namespace BarberManagementSystem.Models
         [MaxLength(100)]
         public string Specialization { get; set; } = string.Empty;
 
+        // Soft delete
+        public bool IsActive { get; set; } = true;
+
         // Navigation properties
         public User User { get; set; } = null!;  // non-nullable navigation
 
