@@ -1,9 +1,7 @@
 ﻿using BarberManagementSystem.DTOs.Booking;
-using BarberManagementSystem.Models;
 using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Controllers;
 
@@ -11,38 +9,22 @@ namespace BarberManagementSystem.Controllers;
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
 {
-    private readonly BookingEngine _engine;
-    private readonly AppDbContext _context;
+    private readonly BookingService _bookingService;
 
-    public BookingsController(BookingEngine engine, AppDbContext context)
+    public BookingsController(BookingService bookingService)
     {
-        _engine = engine;
-        _context = context;
+        _bookingService = bookingService;
     }
 
-    // POST: api/bookings - Create a new booking
+    //  CREATE BOOKING
     [Authorize(Policy = "CustomerOrAdmin")]
     [HttpPost]
-    public async Task<IActionResult> Create(CreateBookingDto dto)
+    public async Task<IActionResult> CreateBooking(CreateBookingDto dto)
     {
         try
         {
-            var booking = await _engine.CreateBookingAsync(
-                dto.UserId,
-                dto.BarberId,
-                dto.ServiceId,
-                dto.Start
-            );
-
-            return Ok(new BookingResponseDto
-            {
-                Id = booking.Id,
-                UserId = booking.UserId,
-                BarberId = booking.BarberId,
-                ServiceId = booking.ServiceId,
-                Start = booking.Start,
-                End = booking.End
-            });
+            var result = await _bookingService.CreateBookingAsync(dto);
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -50,43 +32,59 @@ public class BookingsController : ControllerBase
         }
     }
 
-    // Additional endpoints for updating, canceling, and retrieving bookings can be added here
-    [HttpGet("user/{userId}")]
+    //  GET BOOKINGS FOR USER
     [Authorize(Policy = "CustomerOrAdmin")]
+    [HttpGet("user/{userId}")]
     public async Task<IActionResult> GetByUser(int userId)
     {
-        var bookings = await _context.Bookings
-            .Where(b => b.UserId == userId)
-            .ToListAsync();
-
-        return Ok(bookings);
+        var result = await _bookingService.GetBookingsForUserAsync(userId);
+        return Ok(result);
     }
 
+    //  GET BOOKINGS FOR BARBER
+    [Authorize(Policy = "BarberOrAdmin")]
+    [HttpGet("barber/{barberId}")]
+    public async Task<IActionResult> GetByBarber(int barberId)
+    {
+        var result = await _bookingService.GetBookingsForBarberAsync(barberId);
+        return Ok(result);
+    }
+
+    //  GET BOOKING BY ID
+    [Authorize(Policy = "CustomerOrAdmin")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var booking = await _context.Bookings.FindAsync(id);
-        if (booking == null)
-            return NotFound("Booking not found.");
-
-        return Ok(booking);
+        try
+        {
+            var result = await _bookingService.GetBookingByIdAsync(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
-    // Additional endpoints for updating and deleting bookings can be added here
+    //  CANCEL BOOKING
     [Authorize(Policy = "CustomerOrAdmin")]
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Cancel(int id)
+    [HttpDelete("{bookingId}")]
+    public async Task<IActionResult> CancelBooking(int bookingId)
     {
-        var booking = await _context.Bookings.FindAsync(id);
-        if (booking == null)
-            return NotFound("Booking not found.");
+        try
+        {
+            var userId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)!.Value;
 
-        if (booking.Start <= DateTime.UtcNow)
-            return BadRequest("You cannot cancel a booking that has already started or passed.");
+            bool isAdmin = role == "Admin";
 
-        _context.Bookings.Remove(booking);
-        await _context.SaveChangesAsync();
+            await _bookingService.CancelBookingAsync(bookingId, userId, isAdmin);
 
-        return Ok("Booking cancelled successfully.");
+            return Ok(new { message = "Booking cancelled successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

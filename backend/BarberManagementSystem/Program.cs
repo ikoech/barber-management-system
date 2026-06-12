@@ -16,6 +16,7 @@ builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddControllers();
 builder.Services.AddScoped<AvailabilityService>();
 builder.Services.AddScoped<BookingEngine>();
+builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<ScheduleService>();
 builder.Services.AddScoped<AdminBookingService>();
 //  Swagger
