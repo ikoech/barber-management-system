@@ -16,6 +16,9 @@ public class Service
     [Required]
     public decimal Price { get; set; }
 
+    //Soft delete flag
+    public bool IsActive { get; set; }
+
     // Navigation
     public ICollection<Booking>? Bookings { get; set; }
 }

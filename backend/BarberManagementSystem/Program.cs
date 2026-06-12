@@ -19,6 +19,7 @@ builder.Services.AddScoped<BookingEngine>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<ScheduleService>();
 builder.Services.AddScoped<AdminBookingService>();
+builder.Services.AddScoped<ServiceService>();
 //  Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

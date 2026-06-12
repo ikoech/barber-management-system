@@ -1,90 +1,89 @@
 ﻿using BarberManagementSystem.DTOs.Services;
-using BarberManagementSystem.Models;
+using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Controllers;
 
-[Authorize(Policy = "AdminOnly")]
 [ApiController]
 [Route("api/[controller]")]
 public class ServicesController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly ServiceService _serviceService;
 
-    public ServicesController(AppDbContext context)
+    public ServicesController(ServiceService serviceService)
     {
-        _context = context;
+        _serviceService = serviceService;
     }
 
-    // GET: api/services
+    // PUBLIC: GET ALL SERVICES
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var services = await _context.Services.ToListAsync();
-        return Ok(services);
+        var result = await _serviceService.GetAllAsync();
+        return Ok(result);
     }
 
-    // GET: api/services/{id}
+    // PUBLIC: GET SERVICE BY ID
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var service = await _context.Services.FindAsync(id);
-        if (service == null)
-            return NotFound("Service not found");
-
-        return Ok(service);
+        try
+        {
+            var result = await _serviceService.GetByIdAsync(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
-    // POST: api/services
-    [Authorize(Policy = "AdminOnly")]
+    // ADMIN: CREATE SERVICE
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateServiceDto dto)
     {
-        var service = new Service
+        try
         {
-            Name = dto.Name,
-            DurationMinutes = dto.DurationMinutes,
-            Price = dto.Price
-        };
-
-        _context.Services.Add(service);
-        await _context.SaveChangesAsync();
-
-        return Ok(service);
+            var result = await _serviceService.CreateAsync(dto);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    // PUT: api/services/{id}
-    [Authorize(Policy = "AdminOnly")]
+    // ADMIN: UPDATE SERVICE
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateServiceDto dto)
     {
-        var service = await _context.Services.FindAsync(id);
-        if (service == null)
-            return NotFound("Service not found");
-
-        service.Name = dto.Name;
-        service.DurationMinutes = dto.DurationMinutes;
-        service.Price = dto.Price;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(service);
+        try
+        {
+            var result = await _serviceService.UpdateAsync(id, dto);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    // DELETE: api/services/{id}
-    [Authorize(Policy = "AdminOnly")]
+    // ADMIN: DELETE SERVICE
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var service = await _context.Services.FindAsync(id);
-        if (service == null)
-            return NotFound("Service not found");
-
-        _context.Services.Remove(service);
-        await _context.SaveChangesAsync();
-
-        return Ok("Service deleted");
+        try
+        {
+            await _serviceService.DeleteAsync(id);
+            return Ok(new { message = "Service deleted successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }
