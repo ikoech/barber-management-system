@@ -20,4 +20,5 @@ public class WorkingHours
     public TimeSpan EndTime { get; set; }
 
     public Barber Barber { get; set; } = null!;
+    public bool IsActive { get; set; } = true; // Soft delete
 }

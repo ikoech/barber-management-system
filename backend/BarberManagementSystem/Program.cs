@@ -22,6 +22,8 @@ builder.Services.AddScoped<AdminBookingService>();
 builder.Services.AddScoped<ServiceService>();
 builder.Services.AddScoped<BarberService>();
 builder.Services.AddScoped<UsersService>();
+builder.Services.AddScoped<WorkingHoursService>();
+
 //  Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
