@@ -32,11 +32,12 @@ public class AvailabilityService
         var start = date.Date + workingHours.StartTime;
         var end = date.Date + workingHours.EndTime;
 
-        // 2. Get breaks
+        // 2. Get breaks (now using DateTime Start/End)
         var breaks = await _context.Breaks
             .Where(b =>
                 b.BarberId == barberId &&
-                b.DayOfWeek == day)
+                b.Start.Date == date.Date &&
+                b.IsActive)
             .ToListAsync();
 
         // 3. Get existing bookings
@@ -56,12 +57,12 @@ public class AvailabilityService
             current = current.AddMinutes(15);
         }
 
-        // 5. Filter out breaks
+        // 5. Filter out breaks (DateTime comparison)
         slots = slots
             .Where(slot =>
                 !breaks.Any(br =>
-                    slot.TimeOfDay < br.EndTime &&
-                    (slot + duration).TimeOfDay > br.StartTime))
+                    slot < br.End &&
+                    (slot + duration) > br.Start))
             .ToList();
 
         // 6. Filter out bookings

@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using BarberManagementSystem.DTOs.Breaks;
+using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
-using BarberManagementSystem.Models;
-using BarberManagementSystem.DTOs.Breaks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BarberManagementSystem.Controllers;
 
@@ -11,96 +10,45 @@ namespace BarberManagementSystem.Controllers;
 [Authorize(Roles = "Admin")]
 public class BreaksController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly BreakService _breakService;
 
-    public BreaksController(AppDbContext context)
+    public BreaksController(BreakService breakService)
     {
-        _context = context;
+        _breakService = breakService;
     }
 
-    // GET: api/breaks/barber/3
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var result = await _breakService.GetAllAsync();
+        return Ok(result);
+    }
+
     [HttpGet("barber/{barberId}")]
     public async Task<IActionResult> GetByBarber(int barberId)
     {
-        var breaks = await _context.Breaks
-            .Where(b => b.BarberId == barberId)
-            .Select(b => new BreakResponseDto
-            {
-                Id = b.Id,
-                BarberId = b.BarberId,
-                DayOfWeek = b.DayOfWeek,
-                StartTime = b.StartTime,
-                EndTime = b.EndTime
-            })
-            .ToListAsync();
-
-        return Ok(breaks);
+        var result = await _breakService.GetByBarberAsync(barberId);
+        return Ok(result);
     }
 
-    // POST: api/breaks
     [HttpPost]
     public async Task<IActionResult> Create(CreateBreakDto dto)
     {
-        var barber = await _context.Barbers.FindAsync(dto.BarberId);
-        if (barber == null)
-            return BadRequest("Barber does not exist.");
-
-        var brk = new Break
-        {
-            BarberId = dto.BarberId,
-            DayOfWeek = dto.DayOfWeek,
-            StartTime = dto.StartTime,
-            EndTime = dto.EndTime
-        };
-
-        _context.Breaks.Add(brk);
-        await _context.SaveChangesAsync();
-
-        return Ok(new BreakResponseDto
-        {
-            Id = brk.Id,
-            BarberId = brk.BarberId,
-            DayOfWeek = brk.DayOfWeek,
-            StartTime = brk.StartTime,
-            EndTime = brk.EndTime
-        });
+        var result = await _breakService.CreateAsync(dto);
+        return Ok(result);
     }
 
-    // PUT: api/breaks/5
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateBreakDto dto)
     {
-        var brk = await _context.Breaks.FindAsync(id);
-        if (brk == null)
-            return NotFound("Break not found.");
-
-        brk.DayOfWeek = dto.DayOfWeek;
-        brk.StartTime = dto.StartTime;
-        brk.EndTime = dto.EndTime;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new BreakResponseDto
-        {
-            Id = brk.Id,
-            BarberId = brk.BarberId,
-            DayOfWeek = brk.DayOfWeek,
-            StartTime = brk.StartTime,
-            EndTime = brk.EndTime
-        });
+        var result = await _breakService.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
-    // DELETE: api/breaks/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var brk = await _context.Breaks.FindAsync(id);
-        if (brk == null)
-            return NotFound("Break not found.");
-
-        _context.Breaks.Remove(brk);
-        await _context.SaveChangesAsync();
-
-        return Ok("Break deleted.");
+        await _breakService.DeleteAsync(id);
+        return Ok(new { message = "Break deactivated successfully." });
     }
 }

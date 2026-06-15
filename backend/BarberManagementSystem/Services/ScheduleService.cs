@@ -1,4 +1,5 @@
 ﻿using BarberManagementSystem.DTOs.Barber;
+using BarberManagementSystem.DTOs.Booking;
 using BarberManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -52,17 +53,19 @@ public class ScheduleService
             schedule.WorkingEnd = working.EndTime;
         }
 
-        // Breaks
+        // Breaks (now using DateTime Start/End)
         var breaks = await _context.Breaks
-            .Where(b => b.BarberId == barberId && b.DayOfWeek == day)
+            .Where(b => b.BarberId == barberId &&
+                        b.Start.Date == date.Date &&
+                        b.IsActive)
             .ToListAsync();
 
         foreach (var br in breaks)
         {
             schedule.Breaks.Add(new BreakDto
             {
-                Start = br.StartTime,
-                End = br.EndTime
+                Start = br.Start,
+                End = br.End
             });
         }
 
@@ -93,8 +96,7 @@ public class ScheduleService
                     cursor < b.End && cursor.AddMinutes(15) > b.Start);
 
                 bool overlapsBreak = breaks.Any(br =>
-                    cursor.TimeOfDay < br.EndTime &&
-                    cursor.AddMinutes(15).TimeOfDay > br.StartTime);
+                    cursor < br.End && cursor.AddMinutes(15) > br.Start);
 
                 if (!overlapsBooking && !overlapsBreak)
                     slots.Add(cursor.ToString("HH:mm"));

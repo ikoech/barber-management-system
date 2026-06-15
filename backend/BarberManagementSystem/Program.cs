@@ -23,6 +23,7 @@ builder.Services.AddScoped<ServiceService>();
 builder.Services.AddScoped<BarberService>();
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<WorkingHoursService>();
+builder.Services.AddScoped<BreakService>();
 
 //  Swagger
 builder.Services.AddEndpointsApiExplorer();

@@ -3,6 +3,7 @@
 public class UpdateBreakDto
 {
     public string DayOfWeek { get; set; } = string.Empty;
-    public TimeSpan StartTime { get; set; }
-    public TimeSpan EndTime { get; set; }
+    public DateTime Start { get; set; }
+    public DateTime End { get; set; }
+    public bool IsActive { get; set; }
 }

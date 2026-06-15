@@ -14,7 +14,7 @@ public class BookingEngine
 
     public async Task<Booking> CreateBookingAsync(int userId, int barberId, int serviceId, DateTime start)
     {
-        // Ensure incoming DateTime is UTC (fixes PostgreSQL timestamp with time zone error)
+        // Ensure incoming DateTime is UTC
         start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
 
         var barber = await _context.Barbers.FindAsync(barberId)
@@ -39,13 +39,13 @@ public class BookingEngine
         if (workingHours == null)
             throw new Exception("Barber is not working at this time.");
 
-        // Validate break conflicts
+        // Validate break conflicts (using DateTime Start/End)
         var breakConflict = await _context.Breaks
             .AnyAsync(b =>
                 b.BarberId == barberId &&
-                b.DayOfWeek == day &&
-                start.TimeOfDay < b.EndTime &&
-                end.TimeOfDay > b.StartTime);
+                b.Start.Date == start.Date &&   // same day
+                start < b.End &&
+                end > b.Start);
 
         if (breakConflict)
             throw new Exception("This time overlaps with a break.");

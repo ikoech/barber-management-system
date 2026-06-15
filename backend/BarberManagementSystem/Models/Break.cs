@@ -12,12 +12,12 @@ public class Break
     [Required]
     [MaxLength(20)]
     public string DayOfWeek { get; set; } = string.Empty;
+    [Required]
+    public DateTime Start { get; set; }
 
     [Required]
-    public TimeSpan StartTime { get; set; }
-
-    [Required]
-    public TimeSpan EndTime { get; set; }
+    public DateTime End { get; set; }
 
     public Barber Barber { get; set; } = null!;
+    public bool IsActive { get; set; } = true;
 }
