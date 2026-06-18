@@ -1,10 +1,20 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+/*eslint no-unused-vars: "error"*/
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import Services from "./pages/Services.jsx";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+    <BrowserRouter>
+        <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/booking/services" element={<Services />} />
+            
+        </Routes>
+    </BrowserRouter>
+);
