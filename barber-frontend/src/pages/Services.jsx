@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Services() {
+  const { authFetch } = useAuth();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -11,7 +13,7 @@ export default function Services() {
   async function loadServices() {
     try {
       console.log("Fetching services...");
-      const res = await fetch("http://localhost:5078/api/services");
+      const res = await authFetch("http://localhost:5078/api/services");
 
       console.log("Status:", res.status);
 

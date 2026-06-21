@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-//
-// ⭐ Helper: Find next working day for the barber
-//
+//  Helper: Find next working day for the barber
 const getNextWorkingDay = async (barberId, date) => {
-  const res = await fetch(`http://localhost:5078/api/workinghours/${barberId}`);
+  const res = await authFetch(`http://localhost:5078/api/workinghours/${barberId}`);
   const workingHours = await res.json();
 
   // Extract active days (e.g., "Monday", "Tuesday")
@@ -30,6 +29,7 @@ const getNextWorkingDay = async (barberId, date) => {
 };
 
 export default function TimeSelection() {
+  const { authFetch, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -44,14 +44,12 @@ export default function TimeSelection() {
   const [error, setError] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
 
-  //
-  // ⭐ Load service + availability
-  //
+  //  Load service + availability
   useEffect(() => {
     async function loadData() {
       try {
         // Load service info
-        const serviceRes = await fetch(
+        const serviceRes = await authFetch(
           `http://localhost:5078/api/services/${serviceId}`
         );
         if (!serviceRes.ok) throw new Error("Failed to load service");
@@ -59,7 +57,7 @@ export default function TimeSelection() {
         setService(serviceData);
 
         // Load availability
-        const availRes = await fetch(
+        const availRes = await authFetch(
           `http://localhost:5078/api/availability?serviceId=${serviceId}&barberId=${barberId}&date=${date}`
         );
         if (!availRes.ok) throw new Error("Failed to load availability");
@@ -108,9 +106,7 @@ export default function TimeSelection() {
     loadData();
   }, [serviceId, barberId, date, navigate]);
 
-  //
-  // ⭐ UI states
-  //
+  //UI states
   if (redirecting) {
     return (
       <div className="p-10 text-center text-lg">
@@ -127,9 +123,7 @@ export default function TimeSelection() {
     return <div className="p-10 text-center text-red-600 text-lg">{error}</div>;
   }
 
-  //
-  // ⭐ Main UI
-  //
+  // Main UI
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-6 text-center">

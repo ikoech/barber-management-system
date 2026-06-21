@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function DateSelection() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { authFetch } = useAuth();
 
   const serviceId = searchParams.get("serviceId");
   const barberId = searchParams.get("barberId") || 1;
@@ -15,20 +17,18 @@ export default function DateSelection() {
 
   const [selectedDate, setSelectedDate] = useState("");
 
-  //
-  // ⭐ Load service + working hours
-  //
+  // Load service + working hours
   useEffect(() => {
     async function loadData() {
       try {
         // Load service
-        const res = await fetch(`http://localhost:5078/api/services/${serviceId}`);
+        const res = await authFetch(`http://localhost:5078/api/services/${serviceId}`);
         if (!res.ok) throw new Error("Failed to load service");
         const data = await res.json();
         setService(data);
 
         // Load working hours
-        const whRes = await fetch(`http://localhost:5078/api/workinghours/${barberId}`);
+        const whRes = await authFetch(`http://localhost:5078/api/workinghours/${barberId}`);
         if (!whRes.ok) throw new Error("Failed to load working hours");
 
         const whData = await whRes.json();
@@ -48,9 +48,7 @@ export default function DateSelection() {
     loadData();
   }, [serviceId, barberId]);
 
-  //
-  // ⭐ Disable days the barber does not work
-  //
+  // Disable days the barber does not work
   const isDayAllowed = (dateString) => {
     const date = new Date(dateString);
     const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
@@ -70,9 +68,7 @@ export default function DateSelection() {
     setSelectedDate(value);
   };
 
-  //
-  // ⭐ Continue to time selection
-  //
+  // Continue to time selection
   const handleContinue = () => {
     if (!selectedDate) return;
 
@@ -81,9 +77,7 @@ export default function DateSelection() {
     );
   };
 
-  //
-  // ⭐ UI states
-  //
+  // UI states
   if (loading) {
     return <div className="p-10 text-center text-lg">Loading service...</div>;
   }
@@ -96,9 +90,7 @@ export default function DateSelection() {
     );
   }
 
-  //
-  // ⭐ Main UI
-  //
+  // Main UI
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-6 text-center">
