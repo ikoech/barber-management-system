@@ -19,6 +19,11 @@ public class Service
     //Soft delete flag
     public bool IsActive { get; set; }
 
+    // REQUIRED: Link service → barber
+    [Required]
+    public int BarberId { get; set; }
+    public Barber Barber { get; set; } = null!;
+
     // Navigation
     public ICollection<Booking>? Bookings { get; set; }
 }

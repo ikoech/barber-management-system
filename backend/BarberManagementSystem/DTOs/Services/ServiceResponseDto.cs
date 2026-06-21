@@ -7,8 +7,8 @@ public class ServiceResponseDto
     public int DurationMinutes { get; set; }
     public decimal Price { get; set; }
 
-
     //Expose IsActive when admin needs to see it
     public bool IsActive { get; set; }
+    public int BarberId { get; set; }
 
 }

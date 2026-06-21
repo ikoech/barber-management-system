@@ -17,7 +17,7 @@ public class BookingsController : ControllerBase
     }
 
     //  CREATE BOOKING
-    [Authorize(Policy = "CustomerOrAdmin")]
+   // [Authorize(Policy = "CustomerOrAdmin")]
     [HttpPost]
     public async Task<IActionResult> CreateBooking(CreateBookingDto dto)
     {

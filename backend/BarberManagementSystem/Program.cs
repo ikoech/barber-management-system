@@ -7,13 +7,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//  Load JwtSettings FIRST
+// Load JwtSettings FIRST
 var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
 builder.Services.AddSingleton(jwtSettings);
 
-//  Add controllers
+// Controllers
 builder.Services.AddControllers();
+
+// Services
 builder.Services.AddScoped<AvailabilityService>();
 builder.Services.AddScoped<BookingEngine>();
 builder.Services.AddScoped<BookingService>();
@@ -25,14 +27,38 @@ builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<WorkingHoursService>();
 builder.Services.AddScoped<BreakService>();
 
-//  Swagger
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//  Database
+// Database
 builder.Services.AddDatabase(builder.Configuration);
 
-//  Authentication
+// ⭐ CORS — REQUIRED for frontend to connect
+/*builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});*/
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+
+// Authentication (JWT)
 builder.Services
     .AddAuthentication(options =>
     {
@@ -54,46 +80,45 @@ builder.Services
                 Encoding.UTF8.GetBytes(jwtSettings.Key)
             ),
 
-            // ⭐ CRITICAL: This MUST match your JWT payload claim name
+            // ⭐ MUST MATCH your JWT claim
             RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
         };
     });
 
-//  Authorization - role-based
+// Authorization policies
 builder.Services.AddAuthorization(options =>
 {
-    // Admin only
     options.AddPolicy("AdminOnly", policy =>
         policy.RequireRole("Admin"));
 
-    // Barber or Admin
     options.AddPolicy("BarberOrAdmin", policy =>
         policy.RequireRole("Barber", "Admin"));
 
-    // Customer or Admin
     options.AddPolicy("CustomerOrAdmin", policy =>
         policy.RequireRole("Customer", "Admin"));
 });
 
-//  Authorization
-builder.Services.AddAuthorization();
-
 var app = builder.Build();
 
-//  Swagger UI
+// Swagger UI
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// REMOVE HTTPS REDIRECTION (frontend uses HTTP)
+//// app.UseHttpsRedirection();
 
-//  Auth middleware
+// ⭐ CORS MUST COME BEFORE AUTH
+//app.UseCors("AllowFrontend");
+app.UseCors("AllowAll");
+
+// Auth middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
-//  Map controllers
+// Controllers
 app.MapControllers();
 
 app.Run();

@@ -7,7 +7,6 @@ namespace BarberManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
 public class WorkingHoursController : ControllerBase
 {
     private readonly WorkingHoursService _workingHoursService;
@@ -17,40 +16,50 @@ public class WorkingHoursController : ControllerBase
         _workingHoursService = workingHoursService;
     }
 
-    // GET ALL WORKING HRS
+    // ⭐ PUBLIC ENDPOINT FOR FRONTEND (NO AUTH)
+    [HttpGet("{barberId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetForFrontend(int barberId)
+    {
+        var result = await _workingHoursService.GetByBarberAsync(barberId);
+        return Ok(result);
+    }
+
+    // ⭐ ADMIN‑ONLY CRUD BELOW
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var result = await _workingHoursService.GetAllAsync();
         return Ok(result);
     }
 
-    // GET BY ID
     [HttpGet("barber/{barberId}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetByBarber(int barberId)
     {
         var result = await _workingHoursService.GetByBarberAsync(barberId);
         return Ok(result);
     }
 
-    // CREATE
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(CreateWorkingHoursDto dto)
     {
         var result = await _workingHoursService.CreateAsync(dto);
         return Ok(result);
     }
 
-    // UPDATE
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, UpdateWorkingHoursDto dto)
     {
         var result = await _workingHoursService.UpdateAsync(id, dto);
         return Ok(result);
     }
 
-    // DELETE WRK HOURS
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         await _workingHoursService.DeleteAsync(id);

@@ -21,7 +21,8 @@ public class ServiceService
             Name = dto.Name,
             DurationMinutes = dto.DurationMinutes,
             Price = dto.Price,
-            IsActive = true
+            IsActive = dto.IsActive,
+            BarberId = dto.BarberId
         };
 
         _context.Services.Add(service);
@@ -33,7 +34,8 @@ public class ServiceService
             Name = service.Name,
             DurationMinutes = service.DurationMinutes,
             Price = service.Price,
-            IsActive = service.IsActive
+            IsActive = service.IsActive,
+            BarberId = service.BarberId
         };
     }
 
@@ -48,7 +50,8 @@ public class ServiceService
                 Name = s.Name,
                 DurationMinutes = s.DurationMinutes,
                 Price = s.Price,
-                IsActive = s.IsActive
+                IsActive = s.IsActive,
+                BarberId = s.BarberId
             })
             .ToListAsync();
     }
@@ -66,7 +69,8 @@ public class ServiceService
             Name = service.Name,
             DurationMinutes = service.DurationMinutes,
             Price = service.Price,
-            IsActive = service.IsActive
+            IsActive = service.IsActive,
+            BarberId = service.BarberId
         };
     }
 
@@ -79,6 +83,8 @@ public class ServiceService
         service.Name = dto.Name;
         service.DurationMinutes = dto.DurationMinutes;
         service.Price = dto.Price;
+        service.IsActive = dto.IsActive;
+        service.BarberId = dto.BarberId;
 
         await _context.SaveChangesAsync();
 
@@ -88,7 +94,8 @@ public class ServiceService
             Name = service.Name,
             DurationMinutes = service.DurationMinutes,
             Price = service.Price,
-            IsActive = service.IsActive
+            IsActive = service.IsActive,
+            BarberId = service.BarberId
         };
     }
 
@@ -98,7 +105,6 @@ public class ServiceService
         var service = await _context.Services.FindAsync(id)
             ?? throw new Exception("Service not found");
 
-        // Soft delete instead of removing
         service.IsActive = false;
 
         await _context.SaveChangesAsync();

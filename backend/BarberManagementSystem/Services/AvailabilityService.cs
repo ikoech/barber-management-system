@@ -14,6 +14,9 @@ public class AvailabilityService
 
     public async Task<List<DateTime>> GetAvailabilityAsync(int barberId, int serviceId, DateTime date)
     {
+        // FIX 1: Ensure incoming date is UTC
+        date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+
         var service = await _context.Services.FindAsync(serviceId)
             ?? throw new Exception("Service not found.");
 
@@ -29,10 +32,13 @@ public class AvailabilityService
         if (workingHours == null)
             return new List<DateTime>();
 
-        var start = date.Date + workingHours.StartTime;
-        var end = date.Date + workingHours.EndTime;
+        // 🔥 FIX 2: Ensure day is UTC before adding times
+        var dayUtc = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 
-        // 2. Get breaks (now using DateTime Start/End)
+        var start = DateTime.SpecifyKind(dayUtc + workingHours.StartTime, DateTimeKind.Utc);
+        var end = DateTime.SpecifyKind(dayUtc + workingHours.EndTime, DateTimeKind.Utc);
+
+        // 2. Get breaks
         var breaks = await _context.Breaks
             .Where(b =>
                 b.BarberId == barberId &&
@@ -53,11 +59,12 @@ public class AvailabilityService
 
         while (current + duration <= end)
         {
-            slots.Add(current);
+            // FIX 3: Ensure each generated slot is UTC
+            slots.Add(DateTime.SpecifyKind(current, DateTimeKind.Utc));
             current = current.AddMinutes(15);
         }
 
-        // 5. Filter out breaks (DateTime comparison)
+        // 5. Filter out breaks
         slots = slots
             .Where(slot =>
                 !breaks.Any(br =>
