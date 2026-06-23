@@ -13,10 +13,23 @@ public class WorkingHoursService
         _context = context;
     }
 
-    // GET ALL
+    // VALIDATION HELPER
+    private static void ValidateWorkingHours(string dayOfWeek, TimeSpan start, TimeSpan end)
+    {
+        // Validate day name
+        if (!Enum.TryParse<DayOfWeek>(dayOfWeek, out _))
+            throw new Exception("Invalid DayOfWeek value. Must match .NET DayOfWeek names (e.g., Monday).");
+
+        // Validate time range
+        if (start >= end)
+            throw new Exception("StartTime must be earlier than EndTime.");
+    }
+
+    // GET ALL (only active)
     public async Task<List<WorkingHoursResponseDto>> GetAllAsync()
     {
         return await _context.WorkingHours
+            .Where(w => w.IsActive) // FIXED
             .Select(w => new WorkingHoursResponseDto
             {
                 Id = w.Id,
@@ -29,11 +42,11 @@ public class WorkingHoursService
             .ToListAsync();
     }
 
-    // GET BY BARBER
+    // GET BY BARBER (only active)
     public async Task<List<WorkingHoursResponseDto>> GetByBarberAsync(int barberId)
     {
         return await _context.WorkingHours
-            .Where(w => w.BarberId == barberId)
+            .Where(w => w.BarberId == barberId && w.IsActive) // FIXED
             .Select(w => new WorkingHoursResponseDto
             {
                 Id = w.Id,
@@ -49,6 +62,17 @@ public class WorkingHoursService
     // CREATE
     public async Task<WorkingHoursResponseDto> CreateAsync(CreateWorkingHoursDto dto)
     {
+        ValidateWorkingHours(dto.DayOfWeek, dto.StartTime, dto.EndTime);
+
+        // Prevent duplicate day entries
+        bool exists = await _context.WorkingHours
+            .AnyAsync(w => w.BarberId == dto.BarberId
+                        && w.DayOfWeek == dto.DayOfWeek
+                        && w.IsActive);
+
+        if (exists)
+            throw new Exception("Working hours for this day already exist for this barber.");
+
         var entity = new WorkingHours
         {
             BarberId = dto.BarberId,
@@ -75,8 +99,20 @@ public class WorkingHoursService
     // UPDATE
     public async Task<WorkingHoursResponseDto> UpdateAsync(int id, UpdateWorkingHoursDto dto)
     {
+        ValidateWorkingHours(dto.DayOfWeek, dto.StartTime, dto.EndTime);
+
         var entity = await _context.WorkingHours.FindAsync(id)
             ?? throw new Exception("Working hours not found.");
+
+        // Prevent duplicates when updating
+        bool duplicate = await _context.WorkingHours
+            .AnyAsync(w => w.BarberId == entity.BarberId
+                        && w.DayOfWeek == dto.DayOfWeek
+                        && w.Id != id
+                        && w.IsActive);
+
+        if (duplicate)
+            throw new Exception("Another working hours entry already exists for this day.");
 
         entity.DayOfWeek = dto.DayOfWeek;
         entity.StartTime = dto.StartTime;

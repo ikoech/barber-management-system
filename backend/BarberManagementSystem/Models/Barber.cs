@@ -20,7 +20,7 @@ namespace BarberManagementSystem.Models
 
         // Navigation properties
         public User User { get; set; } = null!;  // non-nullable navigation
-
+        public List<DayOff> DaysOff { get; set; } = new();
         public ICollection<WorkingHours> WorkingHours { get; set; } = new List<WorkingHours>();
         public ICollection<Break> Breaks { get; set; } = new List<Break>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

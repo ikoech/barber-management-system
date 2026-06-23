@@ -14,57 +14,65 @@ public class AvailabilityService
 
     public async Task<List<DateTime>> GetAvailabilityAsync(int barberId, int serviceId, DateTime date)
     {
-        // FIX 1: Ensure incoming date is UTC
-        date = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        // Convert incoming date to DateOnly (no timezone issues)
+        var dateOnly = DateOnly.FromDateTime(date);
+        var day = dateOnly.DayOfWeek.ToString();
 
         var service = await _context.Services.FindAsync(serviceId)
             ?? throw new Exception("Service not found.");
 
         var duration = TimeSpan.FromMinutes(service.DurationMinutes);
-        var day = date.DayOfWeek.ToString();
 
-        // 1. Get working hours
+        // ⭐ Check Days Off
+        bool isDayOff = await _context.DayOffs
+            .AnyAsync(d =>
+                d.BarberId == barberId &&
+                d.Date == dateOnly &&
+                d.IsActive);
+
+        if (isDayOff)
+            return new List<DateTime>();
+
+        // ⭐ Get working hours
         var workingHours = await _context.WorkingHours
             .FirstOrDefaultAsync(w =>
                 w.BarberId == barberId &&
-                w.DayOfWeek == day);
+                w.DayOfWeek == day &&
+                w.IsActive);
 
         if (workingHours == null)
             return new List<DateTime>();
 
-        // FIX 2: Ensure day is UTC before adding times
-        var dayUtc = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
+        // ⭐ Convert TimeSpan → DateTime
+        var start = dateOnly.ToDateTime(TimeOnly.FromTimeSpan(workingHours.StartTime));
+        var end = dateOnly.ToDateTime(TimeOnly.FromTimeSpan(workingHours.EndTime));
 
-        var start = DateTime.SpecifyKind(dayUtc + workingHours.StartTime, DateTimeKind.Utc);
-        var end = DateTime.SpecifyKind(dayUtc + workingHours.EndTime, DateTimeKind.Utc);
-
-        // 2. Get breaks
+        // ⭐ Get breaks
         var breaks = await _context.Breaks
             .Where(b =>
                 b.BarberId == barberId &&
-                b.Start.Date == date.Date &&
+                DateOnly.FromDateTime(b.Start) == dateOnly &&
                 b.IsActive)
             .ToListAsync();
 
-        // 3. Get existing bookings
+        // ⭐ Get bookings
         var bookings = await _context.Bookings
             .Where(b =>
                 b.BarberId == barberId &&
-                b.Start.Date == date.Date)
+                DateOnly.FromDateTime(b.Start) == dateOnly)
             .ToListAsync();
 
-        // 4. Generate 15-minute slots
+        // ⭐ Generate 15-minute slots
         var slots = new List<DateTime>();
         var current = start;
 
         while (current + duration <= end)
         {
-            // FIX 3: Ensure each generated slot is UTC
-            slots.Add(DateTime.SpecifyKind(current, DateTimeKind.Utc));
+            slots.Add(current);
             current = current.AddMinutes(15);
         }
 
-        // 5. Filter out breaks
+        // ⭐ Filter breaks
         slots = slots
             .Where(slot =>
                 !breaks.Any(br =>
@@ -72,7 +80,7 @@ public class AvailabilityService
                     (slot + duration) > br.Start))
             .ToList();
 
-        // 6. Filter out bookings
+        // ⭐ Filter bookings
         slots = slots
             .Where(slot =>
                 !bookings.Any(b =>

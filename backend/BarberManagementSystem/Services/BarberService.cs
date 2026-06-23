@@ -17,10 +17,8 @@ public class BarberService
     //CREATE BARBER
     public async Task<BarberResponseDto> CreateAsync(CreateBarberDto dto)
     {
-        var exists = await _context.Barbers.AnyAsync(b => b.UserId == dto.UserId);
-        if (exists)
+        if (await _context.Barbers.AnyAsync(b => b.UserId == dto.UserId))
             throw new Exception("This user is already registered as a barber.");
-
 
         var barber = new Barber
         {
@@ -34,9 +32,9 @@ public class BarberService
 
         return new BarberResponseDto
         {
-            Id = dto.UserId,
-            UserId = dto.UserId,
-            Specialization = dto.Specialization,
+            Id = barber.Id,  // FIXED
+            UserId = barber.UserId,
+            Specialization = barber.Specialization,
             IsActive = barber.IsActive
         };
     }

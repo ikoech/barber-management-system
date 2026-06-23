@@ -1,5 +1,4 @@
-﻿// Services/BookingEngine.cs
-using BarberManagementSystem.Models;
+﻿using BarberManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Services;
@@ -16,6 +15,18 @@ public class BookingEngine
     public async Task<Booking> CreateBookingAsync(int userId, int barberId, int serviceId, DateTime start)
     {
         start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+
+        // ⭐ NEW: Block booking if barber has a day off
+        var dateOnly = DateOnly.FromDateTime(start);
+
+        bool isDayOff = await _context.DayOffs
+            .AnyAsync(d =>
+                d.BarberId == barberId &&
+                d.Date == dateOnly &&
+                d.IsActive);
+
+        if (isDayOff)
+            throw new Exception("The barber is not available on this day.");
 
         var service = await _context.Services.FindAsync(serviceId)
             ?? throw new Exception("Service not found.");

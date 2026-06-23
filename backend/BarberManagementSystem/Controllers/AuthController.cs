@@ -1,7 +1,6 @@
 ﻿using BarberManagementSystem.Configuration;
 using BarberManagementSystem.DTOs.Auth;
 using BarberManagementSystem.Models;
-using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -65,12 +64,22 @@ public class AuthController : ControllerBase
 
     private string GenerateJwtToken(User user)
     {
-        var claims = new[]
-        {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // ⭐ REQUIRED
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         new Claim(JwtRegisteredClaimNames.Email, user.Email),
-        new Claim(ClaimTypes.Role, user.Role)
+        new Claim(ClaimTypes.Role, user.Role),
+        new Claim("fullName", user.FullName ?? "")
     };
+
+        // Attach BarberId if user is a barber
+        var barber = _context.Barbers
+            .FirstOrDefault(b => b.UserId == user.Id && b.IsActive);
+
+        if (barber != null)
+        {
+            claims.Add(new Claim("barberId", barber.Id.ToString()));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -85,6 +94,7 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 
 
     // ADMIN: GET ALL USERS

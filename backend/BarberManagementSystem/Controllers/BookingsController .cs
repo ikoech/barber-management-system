@@ -1,5 +1,4 @@
-﻿// Controllers/BookingsController.cs
-using BarberManagementSystem.DTOs.Booking;
+﻿using BarberManagementSystem.DTOs.Booking;
 using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +37,15 @@ public class BookingsController : ControllerBase
     public async Task<IActionResult> GetByUser(int userId)
     {
         var result = await _bookingService.GetBookingsForUserAsync(userId);
+        return Ok(result);
+    }
+
+   
+    [HttpGet("barber/{barberId}")]
+    [Authorize(Policy = "BarberOrAdmin")]
+    public async Task<IActionResult> GetByBarber(int barberId)
+    {
+        var result = await _bookingService.GetBookingsForBarberAsync(barberId);
         return Ok(result);
     }
 

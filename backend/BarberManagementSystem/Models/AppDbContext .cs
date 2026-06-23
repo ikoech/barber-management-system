@@ -12,7 +12,7 @@ namespace BarberManagementSystem.Models
         public DbSet<WorkingHours> WorkingHours { get; set; }
         public DbSet<Break> Breaks { get; set; }
         public DbSet<Booking> Bookings { get; set; } = null!;
-
+        public DbSet<DayOff>  DayOffs { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -53,6 +53,13 @@ namespace BarberManagementSystem.Models
                 .HasForeignKey(bk => bk.BarberId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<DayOff>()
+                .HasOne(d => d.Barber)
+                .WithMany(b => b.DaysOff)
+                .HasForeignKey(d => d.BarberId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
             // SERVICE
             modelBuilder.Entity<Service>()
                 .HasMany(s => s.Bookings)
@@ -92,6 +99,7 @@ namespace BarberManagementSystem.Models
                 .WithMany(s => s.Bookings)
                 .HasForeignKey(b => b.ServiceId)
                 .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }
