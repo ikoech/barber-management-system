@@ -32,7 +32,7 @@ public class AvailabilityService
         if (workingHours == null)
             return new List<DateTime>();
 
-        // 🔥 FIX 2: Ensure day is UTC before adding times
+        // FIX 2: Ensure day is UTC before adding times
         var dayUtc = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 
         var start = DateTime.SpecifyKind(dayUtc + workingHours.StartTime, DateTimeKind.Utc);

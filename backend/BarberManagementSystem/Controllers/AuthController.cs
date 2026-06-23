@@ -62,14 +62,15 @@ public class AuthController : ControllerBase
     }
 
     // Helper method to generate JWT token
+
     private string GenerateJwtToken(User user)
     {
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role) // ⭐ Role claim
-        };
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // ⭐ REQUIRED
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -84,6 +85,8 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+
     // ADMIN: GET ALL USERS
     [AllowAnonymous]
     [HttpPost("create-temp-admin")]

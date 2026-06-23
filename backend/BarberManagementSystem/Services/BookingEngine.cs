@@ -1,4 +1,5 @@
-﻿using BarberManagementSystem.Models;
+﻿// Services/BookingEngine.cs
+using BarberManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Services;
@@ -14,11 +15,7 @@ public class BookingEngine
 
     public async Task<Booking> CreateBookingAsync(int userId, int barberId, int serviceId, DateTime start)
     {
-        // Ensure incoming DateTime is UTC
         start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
-
-        var barber = await _context.Barbers.FindAsync(barberId)
-            ?? throw new Exception("Barber not found.");
 
         var service = await _context.Services.FindAsync(serviceId)
             ?? throw new Exception("Service not found.");
@@ -28,7 +25,6 @@ public class BookingEngine
 
         var day = start.DayOfWeek.ToString();
 
-        // Validate working hours
         var workingHours = await _context.WorkingHours
             .FirstOrDefaultAsync(w =>
                 w.BarberId == barberId &&
@@ -39,18 +35,16 @@ public class BookingEngine
         if (workingHours == null)
             throw new Exception("Barber is not working at this time.");
 
-        // Validate break conflicts (using DateTime Start/End)
         var breakConflict = await _context.Breaks
             .AnyAsync(b =>
                 b.BarberId == barberId &&
-                b.Start.Date == start.Date &&   // same day
+                b.Start.Date == start.Date &&
                 start < b.End &&
                 end > b.Start);
 
         if (breakConflict)
             throw new Exception("This time overlaps with a break.");
 
-        // Validate overlapping bookings
         var bookingConflict = await _context.Bookings
             .AnyAsync(b =>
                 b.BarberId == barberId &&
@@ -60,7 +54,6 @@ public class BookingEngine
         if (bookingConflict)
             throw new Exception("This time is already booked.");
 
-        // Create booking
         var booking = new Booking
         {
             UserId = userId,

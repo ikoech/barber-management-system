@@ -13,10 +13,12 @@ public class AdminController : ControllerBase
 {
     private readonly AdminBookingService _bookingService;
     private readonly AppDbContext _context;
-    public AdminController(AdminBookingService bookingService, AppDbContext context)
+    private readonly AdminStatsService _statsService;
+    public AdminController(AdminBookingService bookingService, AppDbContext context, AdminStatsService statsService)
     {
         _bookingService = bookingService;
         _context = context;
+        _statsService = statsService;
     }
     // GET: api/admin/bookings
     [HttpGet("bookings")]
@@ -30,6 +32,13 @@ public class AdminController : ControllerBase
                 barberId, userId, serviceId, date);
 
         return Ok(bookings);
+    }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats()
+    { 
+        var stats = await _statsService.GetStatsAsync();
+        return Ok(stats);
     }
 
     // PUT: api/admin/users/{userId}/role

@@ -3,10 +3,13 @@ using BarberManagementSystem.DTOs.Services;
 using BarberManagementSystem.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 // Load JwtSettings FIRST
 var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
 var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
@@ -26,6 +29,7 @@ builder.Services.AddScoped<BarberService>();
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<WorkingHoursService>();
 builder.Services.AddScoped<BreakService>();
+builder.Services.AddScoped<AdminStatsService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

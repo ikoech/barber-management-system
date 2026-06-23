@@ -15,5 +15,7 @@ public class AdminBookingOverviewDto
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
 
+    public string CustomerEmail { get; set; } = string.Empty;
+    public string Status { get; set; } = "Confirmed";
 
 }

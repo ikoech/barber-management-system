@@ -10,12 +10,11 @@ export default function ConfirmBooking() {
   const serviceId = params.get("serviceId");
   const barberId = params.get("barberId");
   const date = params.get("date");
-  const time = params.get("time");
+  const time = params.get("time"); // ISO string
 
   const handleConfirm = async () => {
     try {
-      // Combine date + time into a valid ISO datetime
-      const startDate = new Date(time).toISOString();
+      const start = new Date(time).toISOString();
 
       const res = await authFetch("http://localhost:5078/api/bookings", {
         method: "POST",
@@ -23,7 +22,7 @@ export default function ConfirmBooking() {
           userId: user.id,
           serviceId: Number(serviceId),
           barberId: Number(barberId),
-          start: startDate
+          start
         }),
       });
 
@@ -32,9 +31,7 @@ export default function ConfirmBooking() {
         throw new Error(msg);
       }
 
-      // Redirect to dashboard after successful booking
       window.location.href = "/dashboard";
-
     } catch (err) {
       setError(err.message);
     }
@@ -46,7 +43,7 @@ export default function ConfirmBooking() {
     <div className="p-10">
       <h1 className="text-2xl font-semibold mb-4">Confirm Booking</h1>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-red-600 mb-2">{error}</p>}
 
       <p>Service ID: {serviceId}</p>
       <p>Barber ID: {barberId}</p>
