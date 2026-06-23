@@ -7,7 +7,7 @@ namespace BarberManagementSystem.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Barber")]
 public class BreaksController : ControllerBase
 {
     private readonly BreakService _breakService;
@@ -18,6 +18,7 @@ public class BreaksController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var result = await _breakService.GetAllAsync();

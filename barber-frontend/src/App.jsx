@@ -13,6 +13,7 @@ import BarberDashboard from "./pages/barber/BarberDashboard";
 import DaysOff from "./pages/barber/DaysOff";
 import Register from "./pages/Register";
 import WorkingHours from "./pages/barber/WorkingHours";
+import Breaks from "./pages/barber/Breaks";
 
 export default function App() {
   return (
@@ -101,12 +102,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/barber/working-hours"
             element={
               <ProtectedRoute role="Barber">
                 <WorkingHours />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/barber/breaks"
+            element={
+              <ProtectedRoute role="Barber">
+                <Breaks />
               </ProtectedRoute>
             }
           />
