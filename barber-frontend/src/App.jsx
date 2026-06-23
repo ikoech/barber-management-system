@@ -9,7 +9,8 @@ import DateSelection from "./pages/DateSelection";
 import TimeSelection from "./pages/TimeSelection";
 import ConfirmBooking from "./pages/ConfirmBooking";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import BarberDashboard from "./pages/BarberDashboard";
+import BarberDashboard from "./pages/barber/BarberDashboard";
+import DaysOff from "./pages/barber/DaysOff";
 import Register from "./pages/Register";
 
 export default function App() {
@@ -18,28 +19,87 @@ export default function App() {
       <BrowserRouter>
         <Routes>
 
-          {/* Redirect root to login */}
+          {/* Redirect root */}
           <Route path="/" element={<Navigate to="/login" />} />
 
-          {/* Public routes */}
+          {/* Public */}
           <Route path="/login" element={<ProtectedRoute><Login /></ProtectedRoute>} />
           <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
 
-          {/* Customer */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          {/* CUSTOMER ROUTES */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute role="Customer">
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Booking */}
-          <Route path="/booking/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-          <Route path="/booking/date" element={<ProtectedRoute><DateSelection /></ProtectedRoute>} />
-          <Route path="/booking/time" element={<ProtectedRoute><TimeSelection /></ProtectedRoute>} />
-          <Route path="/booking/confirm" element={<ProtectedRoute><ConfirmBooking /></ProtectedRoute>} />
+          <Route
+            path="/booking/services"
+            element={
+              <ProtectedRoute role="Customer">
+                <Services />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Admin */}
-          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route
+            path="/booking/date"
+            element={
+              <ProtectedRoute role="Customer">
+                <DateSelection />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Barber */}
-          <Route path="/barber/dashboard" element={<ProtectedRoute><BarberDashboard /></ProtectedRoute>} />
+          <Route
+            path="/booking/time"
+            element={
+              <ProtectedRoute role="Customer">
+                <TimeSelection />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route
+            path="/booking/confirm"
+            element={
+              <ProtectedRoute role="Customer">
+                <ConfirmBooking />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ADMIN */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="Admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* BARBER */}
+          <Route
+            path="/barber/dashboard"
+            element={
+              <ProtectedRoute role="Barber">
+                <BarberDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/barber/daysoff"
+            element={
+              <ProtectedRoute role="Barber">
+                <DaysOff />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -7,17 +7,21 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Extract user fields from JWT
+  const mapUserFromToken = (decoded) => ({
+    id: decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
+    email: decoded.email,
+    role: decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
+    fullName: decoded.fullName ?? null,
+    barberId: decoded.barberId ? Number(decoded.barberId) : null
+  });
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode(token);
-
-        setUser({
-          id: decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
-          email: decoded.email,
-          role: decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
-        });
+        setUser(mapUserFromToken(decoded));
       } catch {
         localStorage.removeItem("token");
       }
@@ -28,12 +32,7 @@ export function AuthProvider({ children }) {
   const login = (token) => {
     localStorage.setItem("token", token);
     const decoded = jwtDecode(token);
-
-    setUser({
-      id: decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
-      email: decoded.email,
-      role: decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
-    });
+    setUser(mapUserFromToken(decoded));
   };
 
   const logout = () => {
