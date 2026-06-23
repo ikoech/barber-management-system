@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import BarberDashboard from "./pages/barber/BarberDashboard";
 import DaysOff from "./pages/barber/DaysOff";
 import Register from "./pages/Register";
+import WorkingHours from "./pages/barber/WorkingHours";
 
 export default function App() {
   return (
@@ -100,6 +101,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/barber/working-hours"
+            element={
+              <ProtectedRoute role="Barber">
+                <WorkingHours />
+              </ProtectedRoute>
+            }
+          />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
