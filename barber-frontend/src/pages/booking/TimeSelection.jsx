@@ -1,8 +1,10 @@
 // src/pages/booking/TimeSelection.jsx
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getWorkingHoursForBarber } from "../../api/workingHours"; // you have something like this
+import { getWorkingHoursForBarber } from "../../api/workingHours";
 import { getServiceById } from "../../api/services";
+import { useAuth } from "../../context/AuthContext";
+
 
 function generateSlots(workingHours, serviceDurationMinutes) {
   if (!workingHours) return [];
@@ -26,21 +28,36 @@ function generateSlots(workingHours, serviceDurationMinutes) {
   return slots;
 }
 
-export default function TimeSelection({ authFetch }) {
+export default function TimeSelection() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { authFetch, loading: authLoading } = useAuth();
   const [slots, setSlots] = useState([]);
   const [selectedTime, setSelectedTime] = useState("");
 
   useEffect(() => {
+    if (authLoading) return;
     if (!state) return;
+
     (async () => {
-      const service = await getServiceById(state.serviceId, authFetch);
-      const wh = await getWorkingHoursForBarber(state.barberId, state.date, authFetch);
-      const generated = generateSlots(wh, service.durationMinutes);
-      setSlots(generated);
+      try {
+        const barberId = state?.barberId;
+        if (barberId === null || barberId === undefined || barberId === "") {
+          setSlots([]);
+          return;
+        }
+
+        const service = await getServiceById(state.serviceId, authFetch);
+        const durationMinutes = Number(service?.durationMinutes ?? 0);
+
+        const wh = await getWorkingHoursForBarber(barberId, state.date, authFetch);
+        const generated = generateSlots(Array.isArray(wh) ? wh[0] ?? wh : wh, durationMinutes);
+        setSlots(Array.isArray(generated) ? generated : []);
+      } catch {
+        setSlots([]);
+      }
     })();
-  }, [state, authFetch]);
+  }, [state, authFetch, authLoading]);
 
   if (!state) return <div className="page-container">Missing booking context.</div>;
 

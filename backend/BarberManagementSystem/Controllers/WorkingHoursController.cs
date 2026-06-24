@@ -34,9 +34,10 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
-    // Barber or Admin: get working hours for a specific barber
+    // Barber/Customer/Admin: get working hours for a specific barber
+    // Customers are allowed to view working hours for booking.
     [HttpGet("barber/{barberId}")]
-    [Authorize(Roles = "Admin,Barber")]
+    [Authorize(Roles = "Admin,Barber,Customer")]
     public async Task<IActionResult> GetByBarber(int barberId)
     {
         var result = await _workingHoursService.GetByBarberAsync(barberId);

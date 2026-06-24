@@ -19,8 +19,24 @@ public class BookingsController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "CustomerOrAdmin")]
-    public async Task<IActionResult> CreateBooking(CreateBookingDto dto)
+    public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto dto)
     {
+        // Validate payload to avoid null/invalid crashes.
+        if (dto == null)
+            return BadRequest("Missing booking payload.");
+
+        if (dto.UserId <= 0)
+            return BadRequest("Invalid userId.");
+
+        if (dto.ServiceId <= 0)
+            return BadRequest("Invalid serviceId.");
+
+        if (dto.BarberId <= 0)
+            return BadRequest("Invalid barberId.");
+
+        if (dto.Start == default)
+            return BadRequest("Invalid start datetime.");
+
         try
         {
             var result = await _bookingService.CreateBookingAsync(dto);

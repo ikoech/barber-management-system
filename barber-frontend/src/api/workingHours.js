@@ -4,9 +4,12 @@ const API = "http://localhost:5078";
 
 // GET working hours for a barber
 export async function getWorkingHours(barberId, authFetch) {
+  if (!barberId && barberId !== 0) return [];
+
   const res = await authFetch(`${API}/api/workinghours/barber/${barberId}`);
 
   if (!res.ok) {
+    // Never break booking UI on 403/404. Return empty slots.
     console.error("Failed to load working hours:", res.status);
     return [];
   }
@@ -37,14 +40,17 @@ export async function deleteWorkingHours(id, authFetch) {
 }
 // ⭐ NEW — Get working hours for a specific date (required by booking flow)
 export async function getWorkingHoursForBarber(barberId, date, authFetch) {
+  if (barberId === null || barberId === undefined || barberId === "") return [];
+
   const res = await authFetch(
-    `${API}/api/workinghours/barber/${barberId}?date=${date}`
+    `${API}/api/workinghours/barber/${barberId}?date=${encodeURIComponent(date ?? "")}`
   );
 
   if (!res.ok) {
     console.error("Failed to load working hours:", res.status);
-    return null;
+    return [];
   }
 
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data) ? data : data ?? [];
 }

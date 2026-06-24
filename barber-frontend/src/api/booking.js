@@ -2,12 +2,26 @@
 const API = "http://localhost:5078";
 
 export async function createBooking(dto, authFetch) {
+  // Hard normalize payload to avoid backend crashes from undefined/null.
+  const payload = {
+    userId: Number(dto?.userId),
+    serviceId: Number(dto?.serviceId),
+    barberId: Number(dto?.barberId),
+    start: dto?.start,
+  };
+
   const res = await authFetch(`${API}/api/bookings`, {
     method: "POST",
-    body: JSON.stringify(dto),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Failed to create booking");
+  }
+
+  const data = await res.json();
+  return data;
 }
 
 export async function getBookingsForUser(userId, authFetch) {

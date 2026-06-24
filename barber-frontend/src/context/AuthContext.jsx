@@ -7,13 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
   // Extract user fields from JWT
   const mapUserFromToken = (decoded) => ({
     id: decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"],
     email: decoded.email,
     role: decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
     fullName: decoded.fullName ?? null,
-    barberId: decoded.barberId ? Number(decoded.barberId) : null
+    barberId:
+      decoded.barberId && decoded.barberId !== ""
+        ? Number(decoded.barberId)
+        : null,
   });
 
   useEffect(() => {

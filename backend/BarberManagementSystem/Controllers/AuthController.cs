@@ -72,14 +72,17 @@ public class AuthController : ControllerBase
         new Claim("fullName", user.FullName ?? "")
     };
 
-        // Attach BarberId if user is a barber
-        var barber = _context.Barbers
-            .FirstOrDefault(b => b.UserId == user.Id && b.IsActive);
+        // Attach BarberId only if user is a Barber
+        // Customers must NOT receive an invalid barberId claim.
+        var barber = user.Role == "Barber"
+            ? _context.Barbers.FirstOrDefault(b => b.UserId == user.Id && b.IsActive)
+            : null;
 
-        if (barber != null)
-        {
-            claims.Add(new Claim("barberId", barber.Id.ToString()));
-        }
+        claims.Add(new Claim(
+            "barberId",
+            user.Role == "Barber" && barber != null
+                ? barber.Id.ToString()
+                : ""));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
