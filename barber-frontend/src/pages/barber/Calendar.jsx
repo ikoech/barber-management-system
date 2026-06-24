@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getCalendar } from "../../api/calendar";
+import "./Calendar.css";
 
 export default function Calendar() {
   const { user, authFetch } = useAuth();
@@ -8,99 +9,85 @@ export default function Calendar() {
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     const m = String(now.getMonth() + 1).padStart(2, "0");
-    return `${now.getFullYear()}-${m}`; // "YYYY-MM"
+    return `${now.getFullYear()}-${m}`;
   });
 
   const [calendar, setCalendar] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!user?.barberId) return;
 
     const load = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getCalendar(user.barberId, selectedMonth, authFetch);
-        setCalendar(data);
-      } catch (err) {
-        console.error(err);
-        setError("Could not load calendar.");
-      } finally {
-        setLoading(false);
-      }
+      setLoading(true);
+      const data = await getCalendar(user.barberId, selectedMonth, authFetch);
+      setCalendar(data);
+      setLoading(false);
     };
 
     load();
-  }, [user?.barberId, selectedMonth, authFetch]);
+  }, [selectedMonth, user?.barberId]);
 
-  const handleMonthChange = (e) => {
-    setSelectedMonth(e.target.value); // "YYYY-MM"
-  };
+  const handleMonthChange = (e) => setSelectedMonth(e.target.value);
 
-  if (!user) return <p>Loading user...</p>;
+  if (!calendar) return <p>Loading...</p>;
 
   return (
-    <div className="page">
-      <div className="page-header">
+    <div className="calendar-page">
+      <div className="calendar-header">
         <button onClick={() => window.history.back()}>&larr; Back</button>
         <h1>Calendar</h1>
+
+        <input
+          type="month"
+          value={selectedMonth}
+          onChange={handleMonthChange}
+          className="month-picker"
+        />
       </div>
 
-      <div style={{ marginBottom: "1rem" }}>
-        <label>
-          Month:{" "}
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={handleMonthChange}
-          />
-        </label>
-      </div>
+      <div className="calendar-grid">
+        {calendar.days.map((day) => {
+          const date = new Date(day.date);
+          const dayNum = date.getDate();
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!loading && !error && calendar && (
-        <div className="calendar-grid">
-          {calendar.days.map((day) => (
+          return (
             <div
               key={day.date}
-              className={`calendar-day ${
-                day.isDayOff ? "calendar-day--off" : ""
+              className={`calendar-cell ${
+                day.isDayOff ? "day-off" : ""
               }`}
             >
-              <div className="calendar-day-header">
-                {new Date(day.date).getDate()}
-                {day.isDayOff && <span className="badge">Day off</span>}
+              <div className="calendar-cell-header">
+                <span className="day-number">{dayNum}</span>
+                {day.isDayOff && <span className="badge-off">Day Off</span>}
               </div>
 
               {!day.isDayOff && day.bookings.length > 0 && (
-                <ul className="calendar-bookings">
+                <div className="booking-list">
                   {day.bookings.map((b) => (
-                    <li key={b.id}>
+                    <div key={b.id} className="booking-item">
                       {new Date(b.start).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })}{" "}
-                      -{" "}
+                      })}
+                      {" - "}
                       {new Date(b.end).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
 
               {!day.isDayOff && day.bookings.length === 0 && (
-                <div className="calendar-empty">No bookings</div>
+                <div className="no-bookings">No bookings</div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -15,6 +15,10 @@ import Register from "./pages/Register";
 import WorkingHours from "./pages/barber/WorkingHours";
 import Breaks from "./pages/barber/Breaks";
 import Calendar from "./pages/barber/Calendar";
+import LandingPage from "./LandingPage";
+import About from "./pages/info/About";
+import Terms from "./pages/info/Terms";
+import Contact from "./pages/info/Contact";
 
 export default function App() {
   return (
@@ -23,7 +27,11 @@ export default function App() {
         <Routes>
 
           {/* Redirect root */}
-          <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/contact" element={<Contact />} />
 
           {/* Public */}
           <Route path="/login" element={<ProtectedRoute><Login /></ProtectedRoute>} />
@@ -127,6 +135,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/" element={<LandingPage />} />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
