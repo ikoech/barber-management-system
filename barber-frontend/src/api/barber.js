@@ -48,3 +48,36 @@ export async function deleteDayOff(id, authFetch) {
   if (!res.ok) throw new Error("Failed to delete day off");
   return true;
 }
+
+// ⭐ FIXED — Get all barbers (safe, normalized, never returns undefined)
+export async function getBarbers(authFetch) {
+  const res = await authFetch(`${API}/api/barbers`);
+
+  if (!res.ok) {
+    console.error("Failed to load barbers:", res.status);
+    return [];
+  }
+
+  const data = await res.json();
+
+  const list =
+    Array.isArray(data)
+      ? data
+      : Array.isArray(data?.result)
+      ? data.result
+      : Array.isArray(data?.data)
+      ? data.data
+      : Array.isArray(data?.items)
+      ? data.items
+      : [];
+
+  const cleaned = (Array.isArray(list) ? list : []).filter((x) => x && typeof x === "object");
+
+  return cleaned.map((x) => ({
+    id: x.id ?? x.Id,
+    userId: x.userId ?? x.UserId,
+    specialization: x.specialization ?? x.Specialization ?? "",
+    isActive: x.isActive ?? x.IsActive ?? true,
+    fullName: x.fullName ?? x.FullName ?? x.user?.fullName ?? x.user?.FullName ?? "(Unknown Barber)",
+  }));
+}

@@ -3,19 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, authFetch, logout } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
 
-  const loadBookings = async () => {
+  async function loadBookings() {
     try {
-      const res = await fetch(
-        `http://localhost:5078/api/bookings/user/${user.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+      const res = await authFetch(
+        `http://localhost:5078/api/bookings/user/${user.id}`
       );
 
       if (!res.ok) throw new Error("Failed to load bookings");
@@ -25,36 +20,35 @@ export default function Dashboard() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
   useEffect(() => {
-    loadBookings();
-  }, []);
+    if (user) loadBookings();
+  }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const cancelBooking = async (id) => {
+  async function cancelBooking(id) {
     if (!confirm("Are you sure you want to cancel this booking?")) return;
 
     try {
-      await fetch(`http://localhost:5078/api/bookings/${id}`, {
+      const res = await authFetch(`http://localhost:5078/api/bookings/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
+
+      if (!res.ok) throw new Error("Failed to cancel booking");
 
       loadBookings();
     } catch (err) {
-      console.error("Failed to cancel booking", err);
+      console.error(err);
     }
-  };
+  }
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
   return (
-    <div className="p-10 max-w-4xl mx-auto">
+    <div className="page-container max-w-4xl mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-10">
@@ -89,7 +83,7 @@ export default function Dashboard() {
 
       {/* Start Booking */}
       <button
-        onClick={() => navigate("/booking")}
+        onClick={() => navigate("/booking/services")}
         className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 mb-8"
       >
         Start Booking
@@ -105,15 +99,15 @@ export default function Dashboard() {
       <div className="space-y-4">
         {bookings.map((b) => (
           <div
-            key={`${b.bookingId}-${b.start}`}
-            className="border p-4 rounded bg-gray-50 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+            key={b.bookingId}
+            className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
           >
             <div>
               <div className="font-medium">{b.serviceName}</div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm opacity-80">
                 {new Date(b.start).toLocaleString()}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm opacity-80">
                 Barber: {b.barberName}
               </div>
             </div>

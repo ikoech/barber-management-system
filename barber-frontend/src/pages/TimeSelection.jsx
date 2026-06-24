@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getBarbers } from "../../api/barber";
 
 //  Helper: Find next working day for the barber
 const getNextWorkingDay = async (barberId, date) => {
@@ -64,9 +65,7 @@ export default function TimeSelection() {
 
         const slotData = await availRes.json();
 
-        //
-        // ⭐ Auto‑redirect if no slots
-        //
+        // Auto‑redirect if no slots
         if (slotData.length === 0) {
           setRedirecting(true);
 

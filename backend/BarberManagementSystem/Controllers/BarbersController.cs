@@ -19,13 +19,16 @@ public class BarbersController : ControllerBase
         _scheduleService = scheduleService;
     }
 
-    // ADMIN: GET ALL BARBERS
-    [Authorize(Roles = "Admin")]
+    // ⭐ CUSTOMER + BARBER + ADMIN: GET ALL BARBERS
+    [Authorize(Roles = "Admin,Barber,Customer")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var result = await _barberService.GetAllAsync();
-        return Ok(result);
+
+        // Never return null/sparse arrays to clients
+        var list = result ?? new List<BarberResponseDto>();
+        return Ok(list);
     }
 
     // ADMIN: GET BARBER BY ID

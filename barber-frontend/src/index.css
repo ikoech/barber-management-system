@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+/* ===========================
+   GLOBAL THEME VARIABLES
+   =========================== */
+:root {
+  --bg: #fafafa;
+  --text: #1a1a1a;
+  --card: #ffffff;
+  --border: #e5e5e5;
+  --accent: #6a4df5;
+  --accent-light: #f3f0ff;
+}
+
+[data-theme="dark"] {
+  --bg: #121212;
+  --text: #eaeaea;
+  --card: #1e1e1e;
+  --border: #2a2a2a;
+  --accent: #8f6bff;
+  --accent-light: #2a1f4d;
+}
+
+/* ===========================
+   GLOBAL WRAPPER (REQUIRED)
+   =========================== */
+.app-theme {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ===========================
+   BODY RESET (NO BACKGROUND)
+   =========================== */
+body {
+  background: transparent !important;
+  color: var(--text);
+  transition: color 0.3s ease;
+}
+
+/* ===========================
+   UNIVERSAL CARD FIX
+   =========================== */
+.card,
+.page-card,
+.dashboard-card,
+.section-box,
+.panel,
+.box {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ===========================
+   UNIVERSAL INPUT FIX
+   =========================== */
+input,
+select,
+textarea {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+}
+
+/* ===========================
+   UNIVERSAL TABLE FIX
+   =========================== */
+table {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+td,
+th {
+  border-color: var(--border) !important;
+}
+
+/* ===========================
+   UNIVERSAL BUTTON FIX
+   =========================== */
+button {
+  background: var(--accent);
+  color: white !important;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+button:hover {
+  background: #5a3de0;
+}
+
+/* ===========================
+   PAGE CONTAINER
+   =========================== */
+.page-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+  transition: background 0.3s ease, color 0.3s ease;
+}

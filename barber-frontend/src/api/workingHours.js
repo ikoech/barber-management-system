@@ -35,3 +35,16 @@ export async function deleteWorkingHours(id, authFetch) {
   if (!res.ok) throw new Error("Failed to delete working hours");
   return true;
 }
+// ⭐ NEW — Get working hours for a specific date (required by booking flow)
+export async function getWorkingHoursForBarber(barberId, date, authFetch) {
+  const res = await authFetch(
+    `${API}/api/workinghours/barber/${barberId}?date=${date}`
+  );
+
+  if (!res.ok) {
+    console.error("Failed to load working hours:", res.status);
+    return null;
+  }
+
+  return res.json();
+}
