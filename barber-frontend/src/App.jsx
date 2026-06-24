@@ -14,6 +14,7 @@ import DaysOff from "./pages/barber/DaysOff";
 import Register from "./pages/Register";
 import WorkingHours from "./pages/barber/WorkingHours";
 import Breaks from "./pages/barber/Breaks";
+import Calendar from "./pages/barber/Calendar";
 
 export default function App() {
   return (
@@ -118,7 +119,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/barber/calendar"
+            element={
+              <ProtectedRoute role="Barber">
+                <Calendar />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

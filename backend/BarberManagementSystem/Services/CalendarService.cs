@@ -1,4 +1,5 @@
-﻿using BarberManagementSystem.Models;
+﻿using BarberManagementSystem.DTOs.Calendar;
+using BarberManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BarberManagementSystem.Services;
@@ -12,67 +13,57 @@ public class CalendarService
         _context = context;
     }
 
-    public async Task<CalendarResponse> GetCalendarAsync(int barberId, DateOnly month)
+    public async Task<CalendarResponseDto> GetCalendarAsync(int barberId, DateOnly month)
     {
-        // 1. Load all bookings for the month
+        int year = month.Year;
+        int monthNumber = month.Month;
+
         var bookings = await _context.Bookings
-            .Where(b =>
-                b.BarberId == barberId &&
-                DateOnly.FromDateTime(b.Start).Month == month.Month &&
-                DateOnly.FromDateTime(b.Start).Year == month.Year)
+            .Where(b => b.BarberId == barberId &&
+                        b.Start.Year == year &&
+                        b.Start.Month == monthNumber)
             .ToListAsync();
 
-        // 2. Load all days off for the month
         var daysOff = await _context.DayOffs
-            .Where(d =>
-                d.BarberId == barberId &&
-                d.Date.Month == month.Month &&
-                d.Date.Year == month.Year &&
-                d.IsActive)
+            .Where(d => d.BarberId == barberId &&
+                        d.IsActive &&
+                        d.Date.Year == year &&
+                        d.Date.Month == monthNumber)
             .ToListAsync();
 
-        // 3. Build calendar structure
-        var days = new List<CalendarDay>();
-
-        int daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
+        var days = new List<CalendarDayDto>();
+        int daysInMonth = DateTime.DaysInMonth(year, monthNumber);
 
         for (int day = 1; day <= daysInMonth; day++)
         {
-            var date = new DateOnly(month.Year, month.Month, day);
+            var dateOnly = new DateOnly(year, monthNumber, day);
+            var dateTime = dateOnly.ToDateTime(TimeOnly.MinValue);
 
-            bool isDayOff = daysOff.Any(d => d.Date == date);
+            bool isDayOff = daysOff.Any(d => d.Date == dateOnly);
 
             var dayBookings = bookings
-                .Where(b => DateOnly.FromDateTime(b.Start) == date)
+                .Where(b => DateOnly.FromDateTime(b.Start) == dateOnly)
+                .Select(b => new BookingSummaryDto
+                {
+                    Id = b.Id,
+                    Start = b.Start,
+                    End = b.End
+                })
                 .ToList();
 
-            days.Add(new CalendarDay
+            days.Add(new CalendarDayDto
             {
-                Date = date,
+                Date = dateTime,
                 IsDayOff = isDayOff,
-                Bookings = isDayOff ? new List<Booking>() : dayBookings
+                Bookings = isDayOff ? new() : dayBookings
             });
         }
 
-        return new CalendarResponse
+        return new CalendarResponseDto
         {
             BarberId = barberId,
-            Month = month,
+            Month = month.ToString("yyyy-MM"),
             Days = days
         };
     }
-}
-
-public class CalendarResponse
-{
-    public int BarberId { get; set; }
-    public DateOnly Month { get; set; }
-    public List<CalendarDay> Days { get; set; } = new();
-}
-
-public class CalendarDay
-{
-    public DateOnly Date { get; set; }
-    public bool IsDayOff { get; set; }
-    public List<Booking> Bookings { get; set; } = new();
 }

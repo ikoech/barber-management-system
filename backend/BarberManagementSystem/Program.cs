@@ -31,7 +31,7 @@ builder.Services.AddScoped<WorkingHoursService>();
 builder.Services.AddScoped<BreakService>();
 builder.Services.AddScoped<AdminStatsService>();
 builder.Services.AddScoped<DaysOffService>();
-
+builder.Services.AddScoped<CalendarService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
