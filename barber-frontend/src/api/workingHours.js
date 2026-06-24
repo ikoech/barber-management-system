@@ -38,19 +38,23 @@ export async function deleteWorkingHours(id, authFetch) {
   if (!res.ok) throw new Error("Failed to delete working hours");
   return true;
 }
-// ⭐ NEW — Get working hours for a specific date (required by booking flow)
-export async function getWorkingHoursForBarber(barberId, date, authFetch) {
-  if (barberId === null || barberId === undefined || barberId === "") return [];
+// ⭐ NEW — Get availability for a specific barber + date (required by booking flow)
+export async function getWorkingHoursForBarber(barberId, date, serviceId, authFetch) {
+  if (barberId === null || barberId === undefined || barberId === "") return {};
+  if (serviceId === null || serviceId === undefined || serviceId === "") return {};
 
   const res = await authFetch(
-    `${API}/api/workinghours/barber/${barberId}?date=${encodeURIComponent(date ?? "")}`
+    `${API}/api/workinghours/barber/${barberId}?date=${encodeURIComponent(date ?? "")}&serviceId=${encodeURIComponent(serviceId)}`
   );
 
   if (!res.ok) {
     console.error("Failed to load working hours:", res.status);
-    return [];
+    return {};
   }
 
   const data = await res.json();
-  return Array.isArray(data) ? data : data ?? [];
+  return data ?? {};
 }
+
+
+

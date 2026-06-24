@@ -72,19 +72,18 @@ public class AuthController : ControllerBase
         new Claim("fullName", user.FullName ?? "")
     };
 
-        // Attach BarberId only if user is a Barber
-        // Customers must NOT receive an invalid barberId claim.
-        var barber = user.Role == "Barber"
-            ? _context.Barbers.FirstOrDefault(b => b.UserId == user.Id && b.IsActive)
-            : null;
+        // Customers must NOT receive a barberId claim.
+        // Only barbers should have a valid barberId in the token.
+        // NOTE: `User` navigation property is BarberProfile.
+        var barberId = user.Role == "Barber" && user.BarberProfile != null
+            ? user.BarberProfile.Id.ToString()
+            : "";
 
-        claims.Add(new Claim(
-            "barberId",
-            user.Role == "Barber" && barber != null
-                ? barber.Id.ToString()
-                : ""));
+
+        claims.Add(new Claim("barberId", barberId));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(

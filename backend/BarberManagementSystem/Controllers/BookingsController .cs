@@ -21,32 +21,38 @@ public class BookingsController : ControllerBase
     [Authorize(Policy = "CustomerOrAdmin")]
     public async Task<IActionResult> CreateBooking([FromBody] CreateBookingDto dto)
     {
-        // Validate payload to avoid null/invalid crashes.
         if (dto == null)
-            return BadRequest("Missing booking payload.");
+            return BadRequest(new { message = "Missing booking payload." });
 
         if (dto.UserId <= 0)
-            return BadRequest("Invalid userId.");
+            return BadRequest(new { message = "Invalid userId." });
 
         if (dto.ServiceId <= 0)
-            return BadRequest("Invalid serviceId.");
+            return BadRequest(new { message = "Invalid serviceId." });
 
         if (dto.BarberId <= 0)
-            return BadRequest("Invalid barberId.");
+            return BadRequest(new { message = "Invalid barberId." });
 
+        // Validate ISO/DateTime
         if (dto.Start == default)
-            return BadRequest("Invalid start datetime.");
+            return BadRequest(new { message = "Invalid start datetime." });
+
+        // Normalize kind to UTC if unspecified
+        if (dto.Start.Kind == DateTimeKind.Unspecified)
+            dto.Start = DateTime.SpecifyKind(dto.Start, DateTimeKind.Utc);
 
         try
         {
             var result = await _bookingService.CreateBookingAsync(dto);
-            return Ok(result);
+            return Created($"/api/bookings/{result.Id}", result);
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            // Let BookingEngine exceptions surface as 400 so frontend can show correct reason.
+            return BadRequest(new { message = ex.Message });
         }
     }
+
 
     [HttpGet("user/{userId}")]
     [Authorize(Policy = "CustomerOrAdmin")]

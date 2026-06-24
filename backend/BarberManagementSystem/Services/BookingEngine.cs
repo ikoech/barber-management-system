@@ -16,17 +16,15 @@ public class BookingEngine
     {
         start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
 
-        // ⭐ NEW: Block booking if barber has a day off
+        // Block booking if barber has a day off
         var dateOnly = DateOnly.FromDateTime(start);
 
         bool isDayOff = await _context.DayOffs
-            .AnyAsync(d =>
-                d.BarberId == barberId &&
-                d.Date == dateOnly &&
-                d.IsActive);
+            .AnyAsync(d => d.BarberId == barberId && d.Date == dateOnly && d.IsActive);
 
         if (isDayOff)
             throw new Exception("The barber is not available on this day.");
+
 
         var service = await _context.Services.FindAsync(serviceId)
             ?? throw new Exception("Service not found.");
@@ -39,6 +37,7 @@ public class BookingEngine
         var workingHours = await _context.WorkingHours
             .FirstOrDefaultAsync(w =>
                 w.BarberId == barberId &&
+                w.IsActive &&
                 w.DayOfWeek == day &&
                 start.TimeOfDay >= w.StartTime &&
                 end.TimeOfDay <= w.EndTime);
@@ -46,12 +45,17 @@ public class BookingEngine
         if (workingHours == null)
             throw new Exception("Barber is not working at this time.");
 
+        // ensure breakConflict excludes only active breaks
+
+
         var breakConflict = await _context.Breaks
             .AnyAsync(b =>
                 b.BarberId == barberId &&
+                b.IsActive &&
                 b.Start.Date == start.Date &&
                 start < b.End &&
                 end > b.Start);
+
 
         if (breakConflict)
             throw new Exception("This time overlaps with a break.");
@@ -61,6 +65,7 @@ public class BookingEngine
                 b.BarberId == barberId &&
                 start < b.End &&
                 end > b.Start);
+
 
         if (bookingConflict)
             throw new Exception("This time is already booked.");

@@ -28,7 +28,9 @@ builder.Services.AddScoped<ServiceService>();
 builder.Services.AddScoped<BarberService>();
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<WorkingHoursService>();
+builder.Services.AddScoped<WorkingHoursAvailabilityService>();
 builder.Services.AddScoped<BreakService>();
+
 builder.Services.AddScoped<AdminStatsService>();
 builder.Services.AddScoped<DaysOffService>();
 builder.Services.AddScoped<CalendarService>();

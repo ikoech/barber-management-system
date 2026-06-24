@@ -39,11 +39,14 @@ public class BookingService
         );
 
         // Reload with navigation properties
-        booking = await _context.Bookings
+            booking = await _context.Bookings
             .Include(b => b.Barber)
                 .ThenInclude(barber => barber.User)
             .Include(b => b.Service)
             .FirstAsync(b => b.Id == booking.Id);
+
+        if (booking.Barber?.User == null || booking.Service == null)
+            throw new Exception("Booking navigation data missing.");
 
         return new BookingResponseDto
         {

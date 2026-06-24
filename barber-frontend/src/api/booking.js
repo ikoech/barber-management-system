@@ -16,9 +16,16 @@ export async function createBooking(dto, authFetch) {
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Failed to create booking");
+    // backend returns { message }
+    try {
+      const data = await res.json();
+      throw new Error(data?.message || "Failed to create booking");
+    } catch {
+      const text = await res.text();
+      throw new Error(text || "Failed to create booking");
+    }
   }
+
 
   const data = await res.json();
   return data;

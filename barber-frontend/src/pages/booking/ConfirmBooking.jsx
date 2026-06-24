@@ -4,6 +4,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createBooking } from "../../api/booking";
 import { useAuth } from "../../context/AuthContext";
 
+function isValidDateYYYYMMDD(v) {
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+
+function parseId(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export default function ConfirmBooking() {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -14,7 +23,6 @@ export default function ConfirmBooking() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // clear error when context changes
     setError("");
   }, [bookingContext]);
 
@@ -31,51 +39,36 @@ export default function ConfirmBooking() {
       return;
     }
 
-    const serviceId = Number(bookingContext.serviceId);
-    const barberIdRaw = bookingContext.barberId;
-    const barberId = barberIdRaw === "" || barberIdRaw === null || barberIdRaw === undefined ? 0 : Number(barberIdRaw);
-
+    const serviceId = parseId(bookingContext.serviceId);
+    const barberId = parseId(bookingContext.barberId);
     const dateStr = bookingContext.date;
     const timeStr = bookingContext.time;
 
-    if (!serviceId || Number.isNaN(serviceId)) {
-      setError("Missing/invalid serviceId.");
-      return;
-    }
+    if (!serviceId) return setError("Missing/invalid serviceId."), void 0;
+    if (!barberId) return setError("Missing/invalid barberId."), void 0;
+    if (!isValidDateYYYYMMDD(dateStr) || !timeStr) return setError("Missing date/time."), void 0;
 
-    if (!dateStr || !timeStr) {
-      setError("Missing date/time.");
-      return;
-    }
+    // Backend availability/engine treat times as UTC clock; send ISO with Z.
+    const startIso = new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
 
-    // Expected: state.time looks like "HH:MM" (from TimeSelection)
-    // Convert local selection to UTC ISO string
-    const startLocal = new Date(`${dateStr}T${timeStr}:00`);
-    if (Number.isNaN(startLocal.getTime())) {
+    if (!startIso || Number.isNaN(new Date(startIso).getTime())) {
       setError("Invalid date/time format.");
       return;
     }
-
-    const startUtc = new Date(startLocal.getTime() - startLocal.getTimezoneOffset() * 60000);
 
     const dto = {
       userId: Number(user.id),
       serviceId,
       barberId,
-      start: startUtc.toISOString(),
+      start: startIso,
     };
-
-    // Avoid sending invalid IDs
-    if (!dto.userId || !dto.serviceId || !dto.start) {
-      setError("Invalid booking payload.");
-      return;
-    }
 
     try {
       setSubmitting(true);
       const result = await createBooking(dto, authFetch);
       navigate("/bookings/my", { state: { justBooked: result } });
     } catch (err) {
+      // createBooking throws message text; backend now returns {message}
       setError(err?.message || "Failed to create booking.");
     } finally {
       setSubmitting(false);
@@ -106,4 +99,5 @@ export default function ConfirmBooking() {
     </div>
   );
 }
+
 

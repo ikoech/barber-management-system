@@ -10,13 +10,55 @@ namespace BarberManagementSystem.Controllers;
 public class WorkingHoursController : ControllerBase
 {
     private readonly WorkingHoursService _workingHoursService;
+    private readonly WorkingHoursAvailabilityService _availabilityService;
 
-    public WorkingHoursController(WorkingHoursService workingHoursService)
+    public WorkingHoursController(
+        WorkingHoursService workingHoursService,
+        WorkingHoursAvailabilityService availabilityService)
     {
         _workingHoursService = workingHoursService;
+        _availabilityService = availabilityService;
     }
 
-    // Public (if you still want anonymous read access)
+    // Required by booking flow: get availability for a specific date.
+    // GET /api/workinghours/barber/{id}?date=YYYY-MM-DD&serviceId=123&stepMinutes=15
+    [HttpGet("barber/{barberId}")]
+    [Authorize(Roles = "Admin,Barber,Customer")]
+    public async Task<IActionResult> GetForDate(
+        int barberId,
+        [FromQuery] string date,
+        [FromQuery] int serviceId,
+        [FromQuery] int stepMinutes = 15)
+    {
+        try
+        {
+            // Never return 500 and never let invalid inputs crash availability.
+            if (barberId <= 0 || serviceId <= 0 || stepMinutes <= 0)
+                return Ok(new AvailableTimesResponseDto { isWorking = false });
+
+            if (string.IsNullOrWhiteSpace(date) || !DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+                return Ok(new AvailableTimesResponseDto { isWorking = false });
+
+            var result = await _availabilityService.GetAvailabilityAsync(barberId, parsedDate, serviceId, stepMinutes);
+            // Always return 200 OK with a valid DTO.
+            return Ok(result ?? new AvailableTimesResponseDto { isWorking = false });
+        }
+        catch
+        {
+            return Ok(new AvailableTimesResponseDto
+            {
+                isWorking = false,
+                workingHours = new List<WorkingHourRangeDto>(),
+                breaks = new List<TimeRangeDto>(),
+                availableTimes = new List<string>(),
+                daysOff = new List<string>()
+            });
+        }
+    }
+
+
+
+    // Backwards-compatible CRUD endpoints
     [HttpGet("{barberId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetForFrontend(int barberId)
@@ -25,7 +67,6 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
-    // Admin-only: list all working hours
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
@@ -34,17 +75,6 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
-    // Barber/Customer/Admin: get working hours for a specific barber
-    // Customers are allowed to view working hours for booking.
-    [HttpGet("barber/{barberId}")]
-    [Authorize(Roles = "Admin,Barber,Customer")]
-    public async Task<IActionResult> GetByBarber(int barberId)
-    {
-        var result = await _workingHoursService.GetByBarberAsync(barberId);
-        return Ok(result);
-    }
-
-    // Barber or Admin: create working hours
     [HttpPost]
     [Authorize(Roles = "Admin,Barber")]
     public async Task<IActionResult> Create(CreateWorkingHoursDto dto)
@@ -53,7 +83,6 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
-    // Barber or Admin: update working hours
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,Barber")]
     public async Task<IActionResult> Update(int id, UpdateWorkingHoursDto dto)
@@ -62,7 +91,6 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
-    // Barber or Admin: delete working hours
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,Barber")]
     public async Task<IActionResult> Delete(int id)
@@ -71,3 +99,4 @@ public class WorkingHoursController : ControllerBase
         return Ok(new { message = "Working hours deactivated successfully." });
     }
 }
+
