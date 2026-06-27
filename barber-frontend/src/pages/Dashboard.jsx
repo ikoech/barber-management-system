@@ -50,13 +50,22 @@ export default function Dashboard() {
     navigate("/login");
   }
 
+  // Friendly display name
+  const displayName =
+    user?.fullName?.split(" ")[0] || // first name
+    user?.fullName ||                // full name
+    user?.email?.split("@")[0] ||    // email prefix
+    "User";
+
   return (
     <div className="page-container max-w-4xl mx-auto">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-10">
         <div>
-          <h1 className="text-3xl font-semibold">Welcome, {user?.email}</h1>
+          <h1 className="text-3xl font-semibold">
+            Welcome, {displayName}
+          </h1>
 
           {user?.role === "Admin" && (
             <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">
@@ -100,9 +109,9 @@ export default function Dashboard() {
       )}
 
       <div className="space-y-4">
-        {bookings.map((b) => (
+        {bookings.map((b, idx) => (
           <div
-            key={b.bookingId}
+            key={b.bookingId ?? `${b.serviceName}-${b.start}-${idx}`}
             className="card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
           >
             <div>
