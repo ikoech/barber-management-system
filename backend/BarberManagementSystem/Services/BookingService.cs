@@ -43,7 +43,10 @@ public class BookingService
             .Include(b => b.Barber)
                 .ThenInclude(barber => barber.User)
             .Include(b => b.Service)
+            .Include(b => b.User)
             .FirstAsync(b => b.Id == booking.Id);
+
+
 
         if (booking.Barber?.User == null || booking.Service == null)
             throw new Exception("Booking navigation data missing.");
@@ -69,7 +72,9 @@ public class BookingService
             .Include(b => b.Barber)
                 .ThenInclude(barber => barber.User)
             .Include(b => b.Service)
+            .Include(b => b.User)
             .OrderBy(b => b.Start)
+
             .Select(b => new BookingResponseDto
             {
                 Id = b.Id,
@@ -78,8 +83,10 @@ public class BookingService
                 ServiceId = b.ServiceId,
                 Start = b.Start,
                 End = b.End,
+                CustomerName = b.User.FullName,
                 BarberName = b.Barber.User.FullName,
                 ServiceName = b.Service.Name
+
             })
             .ToListAsync();
     }

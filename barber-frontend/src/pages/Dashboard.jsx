@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { API_BASE } from "../api/config";
 
 export default function Dashboard() {
   const { user, authFetch, logout } = useAuth();
@@ -8,9 +9,11 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
 
   async function loadBookings() {
+    if (!user?.id) return;
+
     try {
       const res = await authFetch(
-        `http://localhost:5078/api/bookings/user/${user.id}`
+        `${API_BASE}/api/bookings/user/${user.id}`
       );
 
       if (!res.ok) throw new Error("Failed to load bookings");
@@ -30,7 +33,7 @@ export default function Dashboard() {
     if (!confirm("Are you sure you want to cancel this booking?")) return;
 
     try {
-      const res = await authFetch(`http://localhost:5078/api/bookings/${id}`, {
+      const res = await authFetch(`${API_BASE}/api/bookings/${id}`, {
         method: "DELETE",
       });
 
@@ -55,7 +58,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-semibold">Welcome, {user?.email}</h1>
 
-          {user.role === "Admin" && (
+          {user?.role === "Admin" && (
             <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">
               CUSTOMER VIEW
             </span>
@@ -63,7 +66,7 @@ export default function Dashboard() {
         </div>
 
         <div className="flex gap-3">
-          {user.role === "Admin" && (
+          {user?.role === "Admin" && (
             <button
               onClick={() => navigate("/admin")}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"

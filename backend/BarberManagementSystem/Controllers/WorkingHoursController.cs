@@ -20,45 +20,70 @@ public class WorkingHoursController : ControllerBase
         _availabilityService = availabilityService;
     }
 
-    // Required by booking flow: get availability for a specific date.
-    // GET /api/workinghours/barber/{id}?date=YYYY-MM-DD&serviceId=123&stepMinutes=15
-    [HttpGet("barber/{barberId}")]
-    [Authorize(Roles = "Admin,Barber,Customer")]
-    public async Task<IActionResult> GetForDate(
-        int barberId,
-        [FromQuery] string date,
-        [FromQuery] int serviceId,
-        [FromQuery] int stepMinutes = 15)
+[HttpGet("barber/{barberId}")]
+[Authorize(Roles = "Admin,Barber,Customer")]
+public async Task<IActionResult> GetForDate(
+    int barberId,
+    [FromQuery] string? date,
+    [FromQuery] int serviceId,
+    [FromQuery] int stepMinutes = 15)
+{
+    try
     {
-        try
-        {
-            // Never return 500 and never let invalid inputs crash availability.
-            if (barberId <= 0 || serviceId <= 0 || stepMinutes <= 0)
-                return Ok(new AvailableTimesResponseDto { isWorking = false });
+        if (barberId <= 0)
+            return Ok(new AvailableTimesResponseDto { isWorking = false });
 
-            if (string.IsNullOrWhiteSpace(date) || !DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
-                return Ok(new AvailableTimesResponseDto { isWorking = false });
-
-            var result = await _availabilityService.GetAvailabilityAsync(barberId, parsedDate, serviceId, stepMinutes);
-            // Always return 200 OK with a valid DTO.
-            return Ok(result ?? new AvailableTimesResponseDto { isWorking = false });
-        }
-        catch
+        //  FIX: When date is missing → return the barber's working hours
+        if (string.IsNullOrWhiteSpace(date))
         {
+            var hours = await _workingHoursService.GetByBarberAsync(barberId);
+
             return Ok(new AvailableTimesResponseDto
             {
-                isWorking = false,
-                workingHours = new List<WorkingHourRangeDto>(),
+                isWorking = hours.Any(),
+                workingHours = hours.Select(h => new WorkingHourRangeDto
+                {
+                    start = h.StartTime,
+                    end = h.EndTime
+                }).ToList(),
                 breaks = new List<TimeRangeDto>(),
-                availableTimes = new List<string>(),
-                daysOff = new List<string>()
+                daysOff = new List<string>(),
+                availableTimes = new List<string>()
             });
         }
+
+        // If date is invalid → return working hours instead of empty
+        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+        {
+            var hours = await _workingHoursService.GetByBarberAsync(barberId);
+
+            return Ok(new AvailableTimesResponseDto
+            {
+                isWorking = hours.Any(),
+                workingHours = hours.Select(h => new WorkingHourRangeDto
+                {
+                    start = h.StartTime,
+                    end = h.EndTime
+                }).ToList(),
+                breaks = new List<TimeRangeDto>(),
+                daysOff = new List<string>(),
+                availableTimes = new List<string>()
+            });
+        }
+
+        // Normal availability flow
+        var result = await _availabilityService.GetAvailabilityAsync(
+            barberId, parsedDate, serviceId, stepMinutes);
+
+        return Ok(result ?? new AvailableTimesResponseDto { isWorking = false });
     }
+    catch
+    {
+        return Ok(new AvailableTimesResponseDto { isWorking = false });
+    }
+}
 
-
-
-    // Backwards-compatible CRUD endpoints
+    // PUBLIC GET for frontend
     [HttpGet("{barberId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetForFrontend(int barberId)
@@ -67,6 +92,7 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
+    // ADMIN GET ALL
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
@@ -75,22 +101,97 @@ public class WorkingHoursController : ControllerBase
         return Ok(result);
     }
 
+    // CREATE (with numeric or string DayOfWeek)
     [HttpPost]
     [Authorize(Roles = "Admin,Barber")]
-    public async Task<IActionResult> Create(CreateWorkingHoursDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateWorkingHoursDto dto)
     {
-        var result = await _workingHoursService.CreateAsync(dto);
-        return Ok(result);
+        if (dto == null)
+            return BadRequest(new { message = "Missing working hours payload." });
+
+        if (dto.BarberId <= 0)
+            return BadRequest(new { message = "Invalid barberId." });
+
+        // Convert numeric dayOfWeek → string
+        string dayString;
+        if (int.TryParse(dto.DayOfWeek, out var dayNum))
+        {
+            if (dayNum < 0 || dayNum > 6)
+                return BadRequest(new { message = "DayOfWeek must be 0–6." });
+
+            dayString = ((DayOfWeek)dayNum).ToString();
+        }
+        else
+        {
+            dayString = dto.DayOfWeek;
+        }
+
+        // Validate times
+        if (!TimeOnly.TryParse(dto.StartTime, out var start))
+            return BadRequest(new { message = "Invalid StartTime format. Use HH:mm." });
+
+        if (!TimeOnly.TryParse(dto.EndTime, out var end))
+            return BadRequest(new { message = "Invalid EndTime format. Use HH:mm." });
+
+        if (start >= end)
+            return BadRequest(new { message = "StartTime must be earlier than EndTime." });
+
+        try
+        {
+            var result = await _workingHoursService.CreateAsync(new CreateWorkingHoursDto
+            {
+                BarberId = dto.BarberId,
+                DayOfWeek = dayString,
+                StartTime = start.ToString("HH:mm"),
+                EndTime = end.ToString("HH:mm")
+            });
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
+    // UPDATE
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,Barber")]
-    public async Task<IActionResult> Update(int id, UpdateWorkingHoursDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkingHoursDto dto)
     {
-        var result = await _workingHoursService.UpdateAsync(id, dto);
-        return Ok(result);
+        if (dto == null)
+            return BadRequest(new { message = "Missing working hours payload." });
+
+        if (id <= 0)
+            return BadRequest(new { message = "Invalid working hours id." });
+
+        if (string.IsNullOrWhiteSpace(dto.DayOfWeek))
+            return BadRequest(new { message = "DayOfWeek is required." });
+
+        if (!Enum.TryParse<DayOfWeek>(dto.DayOfWeek.Trim(), true, out _))
+            return BadRequest(new { message = "Invalid DayOfWeek. Use Monday..Sunday." });
+
+        if (!TimeOnly.TryParse(dto.StartTime, out var start))
+            return BadRequest(new { message = "Invalid StartTime format. Use HH:mm." });
+
+        if (!TimeOnly.TryParse(dto.EndTime, out var end))
+            return BadRequest(new { message = "Invalid EndTime format. Use HH:mm." });
+
+        if (start >= end)
+            return BadRequest(new { message = "StartTime must be earlier than EndTime." });
+
+        try
+        {
+            var result = await _workingHoursService.UpdateAsync(id, dto);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
+    // DELETE (soft delete)
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,Barber")]
     public async Task<IActionResult> Delete(int id)
@@ -99,4 +200,3 @@ public class WorkingHoursController : ControllerBase
         return Ok(new { message = "Working hours deactivated successfully." });
     }
 }
-

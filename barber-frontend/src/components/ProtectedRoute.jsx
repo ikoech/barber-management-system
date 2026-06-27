@@ -24,12 +24,16 @@ export default function ProtectedRoute({ children, role }) {
   // Block protected routes when logged out
   if (!user) return <Navigate to="/login" />;
 
-  // ⭐ NEW: Role-based protection
-  if (role && user.role !== role) {
-    if (user.role === "Barber") return <Navigate to="/barber/dashboard" />;
-    if (user.role === "Admin") return <Navigate to="/admin" />;
+  const userRole = user?.role ?? null;
+
+  // NEW: Role-based protection
+  if (role && userRole !== role) {
+    if (userRole === "Barber") return <Navigate to="/barber/dashboard" />;
+    if (userRole === "Admin") return <Navigate to="/admin" />;
     return <Navigate to="/dashboard" />;
   }
 
+
+  
   return children;
 }

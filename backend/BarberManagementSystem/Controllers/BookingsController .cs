@@ -65,11 +65,22 @@ public class BookingsController : ControllerBase
    
     [HttpGet("barber/{barberId}")]
     [Authorize(Policy = "BarberOrAdmin")]
-    public async Task<IActionResult> GetByBarber(int barberId)
+    public async Task<IActionResult> GetByBarber([FromRoute] int barberId)
     {
-        var result = await _bookingService.GetBookingsForBarberAsync(barberId);
-        return Ok(result);
+        if (barberId <= 0)
+            return BadRequest(new { message = "barberId is required and must be > 0." });
+
+        try
+        {
+            var result = await _bookingService.GetBookingsForBarberAsync(barberId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
+
 
     [HttpDelete("{bookingId}")]
     [Authorize(Policy = "CustomerOrAdmin")]

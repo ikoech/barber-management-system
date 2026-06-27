@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../api/config";
+
 
 export default function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,11 +25,11 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5078/api/auth/login", {
+      const response = await fetch(`${API_BASE}/api/Auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
       if (!response.ok) {
         const err = await response.text();
@@ -35,26 +39,14 @@ export default function Login() {
       const data = await response.json();
       const token = data.token;
 
-      const decoded = jwtDecode(token);
+      // 1. Save token
+      localStorage.setItem("token", token);
 
-      const userData = {
-        id: decoded["nameid"],
-        email: decoded["email"],
-        role: decoded["role"],
-        fullName: decoded["fullname"] || "",
-        barberId: decoded["barberId"] || null,
-      };
+      // 2. Let AuthContext decode and set user
+      login(token);
 
-      login(token, userData);
-
-      // Redirect based on role
-      if (userData.role === "Admin") {
-        window.location.href = "/admin";
-      } else if (userData.role === "Barber") {
-        window.location.href = "/barber/dashboard";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      // 3. Redirect WITHOUT query params (fixes WebSocket freeze)
+      navigate("/dashboard", { replace: true });
 
     } catch (err) {
       setError(err.message || "Invalid credentials");
@@ -80,7 +72,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              placeholder="you@example.com"
+              placeholder="ben@gmail.com"
             />
           </div>
 

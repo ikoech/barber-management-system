@@ -1,50 +1,90 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getBreaks, createBreak, deleteBreak } from "../../api/breaks";
 
 export default function Breaks() {
   const { user, authFetch } = useAuth();
+
   const [breaks, setBreaks] = useState([]);
   const [dayOfWeek, setDayOfWeek] = useState("Monday");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const barberId = useMemo(() => {
+    const n = Number(user?.barberId);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [user?.barberId]);
 
   useEffect(() => {
-    if (!user?.barberId) return;
+    if (!barberId) return;
     loadBreaks();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barberId]);
 
   async function loadBreaks() {
-    const data = await getBreaks(user.barberId, authFetch);
-    setBreaks(data);
+    if (!barberId) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getBreaks(barberId, authFetch);
+      setBreaks(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load breaks.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleAdd() {
+    if (!user || !barberId) {
+      setError("Your session has expired. Please log in again.");
+      if (typeof window !== "undefined") window.location.href = "/login";
+      return;
+    }
+
     if (!start || !end) {
       setError("Start and end are required.");
       return;
     }
 
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      setError("Invalid start/end date.");
+      return;
+    }
+
+    if (endDate <= startDate) {
+      setError("End must be after Start.");
+      return;
+    }
+
     try {
       setError("");
+      setLoading(true);
 
       await createBreak(
         {
-          BarberId: user.barberId,
-          DayOfWeek: dayOfWeek,
-          Start: new Date(start),
-          End: new Date(end),
+          barberId,
+          dayOfWeek,
+          start: startDate,
+          end: endDate,
         },
         authFetch
       );
 
       setStart("");
       setEnd("");
-      loadBreaks();
+      await loadBreaks();
     } catch (err) {
       console.error("Backend error:", err);
-      setError("Failed to create break.");
+      setError(err?.message || "Failed to create break.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -52,11 +92,20 @@ export default function Breaks() {
     try {
       setError("");
       await deleteBreak(id, authFetch);
-      loadBreaks();
+      await loadBreaks();
     } catch (err) {
       console.error(err);
       setError("Failed to delete break.");
     }
+  }
+
+  if (!user || !barberId) {
+    // Hard requirement: do not render barber pages when barberId invalid.
+    return (
+      <div className="container mx-auto p-6">
+        <p className="text-red-600 mb-3">Your session has expired. Please log in again.</p>
+      </div>
+    );
   }
 
   return (
@@ -119,7 +168,9 @@ export default function Breaks() {
 
       <h3 className="text-xl font-semibold mb-3">Your Breaks</h3>
 
-      {breaks.length === 0 ? (
+      {loading ? (
+        <p>Loading...</p>
+      ) : breaks.length === 0 ? (
         <p>No breaks set.</p>
       ) : (
         <ul className="space-y-3">
@@ -129,8 +180,7 @@ export default function Breaks() {
               className="bg-gray-100 p-3 rounded flex justify-between items-center"
             >
               <span>
-                <strong>{b.dayOfWeek}</strong>{" "}
-                — {new Date(b.start).toLocaleString("sv-SE")} to{" "}
+                <strong>{b.dayOfWeek}</strong> — {new Date(b.start).toLocaleString("sv-SE")} to{" "}
                 {new Date(b.end).toLocaleString("sv-SE")}
               </span>
 
@@ -147,3 +197,4 @@ export default function Breaks() {
     </div>
   );
 }
+

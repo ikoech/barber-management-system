@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
-  getWorkingHours,
+  getWorkingHoursForBarberCRUD,
   createWorkingHours,
   deleteWorkingHours,
 } from "../../api/workingHours";
 
+
 export default function WorkingHours() {
   const { user, authFetch } = useAuth();
+
   const [hours, setHours] = useState([]);
   const [dayOfWeek, setDayOfWeek] = useState("Monday");
   const [start, setStart] = useState("");
@@ -15,49 +17,73 @@ export default function WorkingHours() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const barberId = useMemo(() => {
+    const n = Number(user?.barberId);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [user?.barberId]);
+
   useEffect(() => {
-    if (!user?.barberId) return;
+    if (!barberId) return;
     loadHours();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barberId]);
 
   async function loadHours() {
+    if (!barberId) return;
     try {
       setLoading(true);
-      const data = await getWorkingHours(user.barberId, authFetch);
-      setHours(data);
+      setError("");
+      const data = await getWorkingHoursForBarberCRUD(barberId, authFetch);
+
+
+      setHours(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
       setError("Failed to load working hours.");
+      setHours([]);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleAdd() {
+    if (!user || !barberId) {
+      setError("Your session has expired. Please log in again.");
+      if (typeof window !== "undefined") window.location.href = "/login";
+      return;
+    }
+
     if (!start || !end) {
       setError("Start and end times are required.");
       return;
     }
 
+    // Backend DTO expects TimeSpan: "HH:mm:ss"
+    const startTime = `${start}:00`;
+    const endTime = `${end}:00`;
+
     try {
       setError("");
+      setLoading(true);
 
       await createWorkingHours(
         {
-          BarberId: user.barberId,
-          DayOfWeek: dayOfWeek,
-          StartTime: `${start}:00`, // "09:00:00"
-          EndTime: `${end}:00`,     // "15:00:00"
+          barberId,
+          dayOfWeek,
+          startTime,
+          endTime,
         },
         authFetch
       );
 
       setStart("");
       setEnd("");
-      loadHours();
+      await loadHours();
     } catch (err) {
       console.error("Backend error:", err);
-      setError(err.message || "Failed to create working hours.");
+      setError(err?.message || "Failed to create working hours.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -65,11 +91,19 @@ export default function WorkingHours() {
     try {
       setError("");
       await deleteWorkingHours(id, authFetch);
-      loadHours();
+      await loadHours();
     } catch (err) {
       console.error(err);
       setError("Failed to delete working hours.");
     }
+  }
+
+  if (!user || !barberId) {
+    return (
+      <div className="container mx-auto p-6">
+        <p className="text-red-600 mb-3">Your session has expired. Please log in again.</p>
+      </div>
+    );
   }
 
   return (
@@ -160,3 +194,4 @@ export default function WorkingHours() {
     </div>
   );
 }
+

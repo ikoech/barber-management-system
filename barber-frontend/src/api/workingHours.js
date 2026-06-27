@@ -1,15 +1,14 @@
 // src/api/workingHours.js
 
-const API = "http://localhost:5078";
+import { API_BASE } from "./config";
 
 // GET working hours for a barber
 export async function getWorkingHours(barberId, authFetch) {
   if (!barberId && barberId !== 0) return [];
 
-  const res = await authFetch(`${API}/api/workinghours/barber/${barberId}`);
+  const res = await authFetch(`${API_BASE}/api/workinghours/${barberId}`);
 
   if (!res.ok) {
-    // Never break booking UI on 403/404. Return empty slots.
     console.error("Failed to load working hours:", res.status);
     return [];
   }
@@ -20,7 +19,7 @@ export async function getWorkingHours(barberId, authFetch) {
 
 // CREATE working hours
 export async function createWorkingHours(payload, authFetch) {
-  const res = await authFetch(`${API}/api/workinghours`, {
+  const res = await authFetch(`${API_BASE}/api/workinghours`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -31,21 +30,23 @@ export async function createWorkingHours(payload, authFetch) {
 
 // DELETE working hours
 export async function deleteWorkingHours(id, authFetch) {
-  const res = await authFetch(`${API}/api/workinghours/${id}`, {
+  const res = await authFetch(`${API_BASE}/api/workinghours/${id}`, {
     method: "DELETE",
   });
 
   if (!res.ok) throw new Error("Failed to delete working hours");
   return true;
 }
-// ⭐ NEW — Get availability for a specific barber + date (required by booking flow)
+
+// Get availability for booking flow
 export async function getWorkingHoursForBarber(barberId, date, serviceId, authFetch) {
   if (barberId === null || barberId === undefined || barberId === "") return {};
   if (serviceId === null || serviceId === undefined || serviceId === "") return {};
 
-  const res = await authFetch(
-    `${API}/api/workinghours/barber/${barberId}?date=${encodeURIComponent(date ?? "")}&serviceId=${encodeURIComponent(serviceId)}`
-  );
+  const today = new Date().toISOString().split("T")[0];
+
+  const url = `${API_BASE}/api/workinghours/barber/${barberId}?date=${today}&serviceId=1&stepMinutes=15`;
+  const res = await authFetch(url);
 
   if (!res.ok) {
     console.error("Failed to load working hours:", res.status);
@@ -56,5 +57,16 @@ export async function getWorkingHoursForBarber(barberId, date, serviceId, authFe
   return data ?? {};
 }
 
+export async function getWorkingHoursForBarberCRUD(barberId, authFetch) {
+  if (!barberId && barberId !== 0) return [];
 
+  const res = await authFetch(`${API_BASE}/api/workinghours/${barberId}`);
 
+  if (!res.ok) {
+    console.error("Failed to load working hours:", res.status);
+    return [];
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}

@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
             FullName = dto.FullName,
             Email = dto.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = "Customer" // ⭐ Default role
+            Role = "Customer"
         };
 
         _context.Users.Add(user);
@@ -45,12 +45,16 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully.");
     }
 
-    // Additional endpoints for login, token generation, etc.
+    // POST: api/auth/login
     [HttpPost("login")]
     public IActionResult Login(LoginDto dto)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
-        if (user == null) return Unauthorized("Invalid credentials");
+        var user = _context.Users
+            .Include(u => u.BarberProfile)
+            .FirstOrDefault(u => u.Email == dto.Email);
+
+        if (user == null)
+            return Unauthorized("Invalid credentials");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             return Unauthorized("Invalid credentials");
@@ -59,52 +63,52 @@ public class AuthController : ControllerBase
 
         return Ok(new { token });
     }
-
-    // Helper method to generate JWT token
-
-    private string GenerateJwtToken(User user)
+private string GenerateJwtToken(User user)
+{
+    var claims = new List<Claim>
     {
-        var claims = new List<Claim>
-    {
+        // ✔ AuthContext expects THIS exact claim for user.id
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+
+        // ✔ AuthContext expects THIS exact claim for email
         new Claim(JwtRegisteredClaimNames.Email, user.Email),
+
+        // ✔ AuthContext expects THIS exact claim for role
         new Claim(ClaimTypes.Role, user.Role),
+
+        // ✔ AuthContext expects "fullName" (camelCase)
         new Claim("fullName", user.FullName ?? "")
     };
 
-        // Customers must NOT receive a barberId claim.
-        // Only barbers should have a valid barberId in the token.
-        // NOTE: `User` navigation property is BarberProfile.
-        var barberId = user.Role == "Barber" && user.BarberProfile != null
-            ? user.BarberProfile.Id.ToString()
-            : "";
-
-
-        claims.Add(new Claim("barberId", barberId));
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
-
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: _jwtSettings.Issuer,
-            audience: _jwtSettings.Audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+    // ✔ AuthContext expects "barberId" as a number-like string
+    if (user.Role == "Barber" && user.BarberProfile != null)
+    {
+        claims.Add(new Claim("barberId", user.BarberProfile.Id.ToString()));
+    }
+    else
+    {
+        claims.Add(new Claim("barberId", ""));
     }
 
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+    var token = new JwtSecurityToken(
+        issuer: _jwtSettings.Issuer,
+        audience: _jwtSettings.Audience,
+        claims: claims,
+        expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
+        signingCredentials: creds
+    );
 
-    // ADMIN: GET ALL USERS
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+
+    // ADMIN: CREATE TEMP ADMIN
     [AllowAnonymous]
     [HttpPost("create-temp-admin")]
     public async Task<IActionResult> CreateTempAdmin([FromServices] AppDbContext context)
     {
-        // Check if an admin already exists
         if (await context.Users.AnyAsync(u => u.Role == "Admin"))
             return BadRequest("Admin already exists.");
 
@@ -122,11 +126,10 @@ public class AuthController : ControllerBase
         return Ok("Temporary Admin created. Email: admin@system.com, Password: Admin123!");
     }
 
-    // ADMIN: GET ALL USERS
+    // ADMIN: RESET ADMIN PASSWORD
     [AllowAnonymous]
     [HttpPost("reset-admin-password")]
-    public async Task<IActionResult> ResetAdminPassword(
-    [FromServices] AppDbContext context)
+    public async Task<IActionResult> ResetAdminPassword([FromServices] AppDbContext context)
     {
         var admin = await context.Users.FirstOrDefaultAsync(u => u.Role == "Admin");
         if (admin == null)
@@ -137,6 +140,4 @@ public class AuthController : ControllerBase
 
         return Ok("Admin password reset to Admin123!");
     }
-
-
 }

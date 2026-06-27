@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getCalendar } from "../../api/calendar";
 import "./Calendar.css";
 
 export default function Calendar() {
-  const { user, authFetch } = useAuth();
+  const { user, authFetch, loading: authLoading } = useAuth();
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -12,25 +12,68 @@ export default function Calendar() {
     return `${now.getFullYear()}-${m}`;
   });
 
+  const barberId = useMemo(() => {
+    const n = Number(user?.barberId);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [user?.barberId]);
+
+  const monthToFullDate = (yyyyMm) => {
+    if (typeof yyyyMm !== "string") return null;
+    const m = yyyyMm.trim();
+    if (!/^\d{4}-\d{2}$/.test(m)) return null;
+    return `${m}-01`;
+  };
+
   const [calendar, setCalendar] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const inFlight = useRef(false);
 
   useEffect(() => {
-    if (!user?.barberId) return;
+    if (authLoading) return;
+    if (!user) return;
+    if (!barberId) return;
 
-    const load = async () => {
-      setLoading(true);
-      const data = await getCalendar(user.barberId, selectedMonth, authFetch);
-      setCalendar(data);
-      setLoading(false);
-    };
+    const fullDate = monthToFullDate(selectedMonth);
+    if (!fullDate) {
+      setCalendar(null);
+      setError("Invalid selected month.");
+      return;
+    }
 
-    load();
-  }, [selectedMonth, user?.barberId]);
+    if (inFlight.current) return;
+    inFlight.current = true;
+
+    setLoading(true);
+    setError("");
+
+    (async () => {
+      try {
+        const data = await getCalendar(barberId, fullDate, authFetch);
+        setCalendar(data);
+      } catch (e) {
+        console.error(e);
+        setCalendar(null);
+        setError(e?.message || "Failed to load calendar.");
+      } finally {
+        setLoading(false);
+        inFlight.current = false;
+      }
+    })();
+  }, [authLoading, selectedMonth, barberId, user, authFetch]);
 
   const handleMonthChange = (e) => setSelectedMonth(e.target.value);
 
-  if (!calendar) return <p>Loading...</p>;
+  if (authLoading) return <p>Loading...</p>;
+  if (!user) return <p>Please log in again</p>;
+  if (!barberId) {
+    if (typeof window !== "undefined") window.location.href = "/login";
+    return <p className="text-red-600 mb-3">Your session has expired. Please log in again.</p>;
+  }
+
+  if (error) return <p className="text-red-600 mb-3">{error}</p>;
+  if (loading || !calendar) return <p>Loading...</p>;
 
   return (
     <div className="calendar-page">
@@ -54,9 +97,7 @@ export default function Calendar() {
           return (
             <div
               key={day.date}
-              className={`calendar-cell ${
-                day.isDayOff ? "day-off" : ""
-              }`}
+              className={`calendar-cell ${day.isDayOff ? "day-off" : ""}`}
             >
               <div className="calendar-cell-header">
                 <span className="day-number">{dayNum}</span>
@@ -91,3 +132,4 @@ export default function Calendar() {
     </div>
   );
 }
+

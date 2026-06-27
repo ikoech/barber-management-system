@@ -13,72 +13,89 @@ public class WorkingHoursService
         _context = context;
     }
 
-    // VALIDATION HELPER
     private static void ValidateWorkingHours(string dayOfWeek, TimeSpan start, TimeSpan end)
     {
-        // Validate day name
         if (!Enum.TryParse<DayOfWeek>(dayOfWeek, out _))
-            throw new Exception("Invalid DayOfWeek value. Must match .NET DayOfWeek names (e.g., Monday).");
+            throw new Exception("Invalid DayOfWeek value.");
 
-        // Validate time range
         if (start >= end)
             throw new Exception("StartTime must be earlier than EndTime.");
     }
 
-    // GET ALL (only active)
+    // GET ALL ACTIVE
     public async Task<List<WorkingHoursResponseDto>> GetAllAsync()
     {
         return await _context.WorkingHours
-            .Where(w => w.IsActive) // FIXED
+            .Where(w => w.IsActive)
             .Select(w => new WorkingHoursResponseDto
             {
                 Id = w.Id,
                 BarberId = w.BarberId,
                 DayOfWeek = w.DayOfWeek,
-                StartTime = w.StartTime,
-                EndTime = w.EndTime,
+                StartTime = w.StartTime.ToString(@"hh\:mm"),
+                EndTime = w.EndTime.ToString(@"hh\:mm"),
                 IsActive = w.IsActive
             })
             .ToListAsync();
     }
 
-    // GET BY BARBER (only active)
+    // GET BY BARBER
     public async Task<List<WorkingHoursResponseDto>> GetByBarberAsync(int barberId)
     {
         return await _context.WorkingHours
-            .Where(w => w.BarberId == barberId && w.IsActive) // FIXED
+            .Where(w => w.BarberId == barberId && w.IsActive)
             .Select(w => new WorkingHoursResponseDto
             {
                 Id = w.Id,
                 BarberId = w.BarberId,
                 DayOfWeek = w.DayOfWeek,
-                StartTime = w.StartTime,
-                EndTime = w.EndTime,
+                StartTime = w.StartTime.ToString(@"hh\:mm"),
+                EndTime = w.EndTime.ToString(@"hh\:mm"),
                 IsActive = w.IsActive
             })
             .ToListAsync();
     }
 
-    // CREATE
+    // CREATE OR UPDATE (idempotent)
     public async Task<WorkingHoursResponseDto> CreateAsync(CreateWorkingHoursDto dto)
     {
-        ValidateWorkingHours(dto.DayOfWeek, dto.StartTime, dto.EndTime);
+        var start = TimeSpan.Parse(dto.StartTime);
+        var end = TimeSpan.Parse(dto.EndTime);
 
-        // Prevent duplicate day entries
-        bool exists = await _context.WorkingHours
-            .AnyAsync(w => w.BarberId == dto.BarberId
-                        && w.DayOfWeek == dto.DayOfWeek
-                        && w.IsActive);
+        ValidateWorkingHours(dto.DayOfWeek, start, end);
 
-        if (exists)
-            throw new Exception("Working hours for this day already exist for this barber.");
+        // Check if this day already exists
+        var existing = await _context.WorkingHours
+            .FirstOrDefaultAsync(w => w.BarberId == dto.BarberId &&
+                                      w.DayOfWeek == dto.DayOfWeek &&
+                                      w.IsActive);
 
+        // If exists → update instead of throwing 400
+        if (existing != null)
+        {
+            existing.StartTime = start;
+            existing.EndTime = end;
+
+            await _context.SaveChangesAsync();
+
+            return new WorkingHoursResponseDto
+            {
+                Id = existing.Id,
+                BarberId = existing.BarberId,
+                DayOfWeek = existing.DayOfWeek,
+                StartTime = existing.StartTime.ToString(@"hh\:mm"),
+                EndTime = existing.EndTime.ToString(@"hh\:mm"),
+                IsActive = existing.IsActive
+            };
+        }
+
+        // Otherwise create new
         var entity = new WorkingHours
         {
             BarberId = dto.BarberId,
-            DayOfWeek = dto.DayOfWeek,
-            StartTime = dto.StartTime,
-            EndTime = dto.EndTime,
+            DayOfWeek = dto.DayOfWeek.Trim(),
+            StartTime = start,
+            EndTime = end,
             IsActive = true
         };
 
@@ -90,8 +107,8 @@ public class WorkingHoursService
             Id = entity.Id,
             BarberId = entity.BarberId,
             DayOfWeek = entity.DayOfWeek,
-            StartTime = entity.StartTime,
-            EndTime = entity.EndTime,
+            StartTime = entity.StartTime.ToString(@"hh\:mm"),
+            EndTime = entity.EndTime.ToString(@"hh\:mm"),
             IsActive = entity.IsActive
         };
     }
@@ -99,24 +116,27 @@ public class WorkingHoursService
     // UPDATE
     public async Task<WorkingHoursResponseDto> UpdateAsync(int id, UpdateWorkingHoursDto dto)
     {
-        ValidateWorkingHours(dto.DayOfWeek, dto.StartTime, dto.EndTime);
-
         var entity = await _context.WorkingHours.FindAsync(id)
             ?? throw new Exception("Working hours not found.");
 
-        // Prevent duplicates when updating
-        bool duplicate = await _context.WorkingHours
-            .AnyAsync(w => w.BarberId == entity.BarberId
-                        && w.DayOfWeek == dto.DayOfWeek
-                        && w.Id != id
-                        && w.IsActive);
+        var start = TimeSpan.Parse(dto.StartTime);
+        var end = TimeSpan.Parse(dto.EndTime);
+
+        ValidateWorkingHours(dto.DayOfWeek, start, end);
+
+        // Check for duplicate day
+        var duplicate = await _context.WorkingHours
+            .AnyAsync(w => w.BarberId == entity.BarberId &&
+                           w.DayOfWeek == dto.DayOfWeek &&
+                           w.Id != id &&
+                           w.IsActive);
 
         if (duplicate)
             throw new Exception("Another working hours entry already exists for this day.");
 
-        entity.DayOfWeek = dto.DayOfWeek;
-        entity.StartTime = dto.StartTime;
-        entity.EndTime = dto.EndTime;
+        entity.DayOfWeek = dto.DayOfWeek.Trim();
+        entity.StartTime = start;
+        entity.EndTime = end;
         entity.IsActive = dto.IsActive;
 
         await _context.SaveChangesAsync();
@@ -126,13 +146,13 @@ public class WorkingHoursService
             Id = entity.Id,
             BarberId = entity.BarberId,
             DayOfWeek = entity.DayOfWeek,
-            StartTime = entity.StartTime,
-            EndTime = entity.EndTime,
+            StartTime = entity.StartTime.ToString(@"hh\:mm"),
+            EndTime = entity.EndTime.ToString(@"hh\:mm"),
             IsActive = entity.IsActive
         };
     }
 
-    // DELETE (soft delete)
+    // SOFT DELETE
     public async Task DeleteAsync(int id)
     {
         var entity = await _context.WorkingHours.FindAsync(id)

@@ -58,9 +58,12 @@ export default function TimeSelection() {
         setService(serviceData);
 
         // Load availability
+        const today = new Date().toISOString().split("T")[0];
+
         const availRes = await authFetch(
-          `http://localhost:5078/api/availability?serviceId=${serviceId}&barberId=${barberId}&date=${date}`
+          `http://localhost:5078/api/availability?serviceId=1&barberId=${barberId}&date=${today}&stepMinutes=15`
         );
+
         if (!availRes.ok) throw new Error("Failed to load availability");
 
         const slotData = await availRes.json();

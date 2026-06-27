@@ -42,18 +42,6 @@ builder.Services.AddSwaggerGen();
 // Database
 builder.Services.AddDatabase(builder.Configuration);
 
-// ⭐ CORS — REQUIRED for frontend to connect
-/*builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});*/
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -88,7 +76,7 @@ builder.Services
                 Encoding.UTF8.GetBytes(jwtSettings.Key)
             ),
 
-            // ⭐ MUST MATCH your JWT claim
+            // MUST MATCH your JWT claim
             RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
         };
     });
@@ -115,11 +103,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// REMOVE HTTPS REDIRECTION (frontend uses HTTP)
-//// app.UseHttpsRedirection();
-
-// ⭐ CORS MUST COME BEFORE AUTH
-//app.UseCors("AllowFrontend");
 app.UseCors("AllowAll");
 
 // Auth middleware
